@@ -88,4 +88,5 @@ function parseProduct(product){
     }
 }
 
+
 module.exports = { scrapeProductPages, writeInventory }

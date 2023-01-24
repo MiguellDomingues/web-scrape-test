@@ -7,6 +7,9 @@ const DOMAIN                    = 'https://www.surreyvapes.com'
 const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/surreyvapes`
 
 const INVENTORY_FILE_NAME       = 'surreyvapes.json'
+const LOG_FILE_NAME             = 'surreyvapes.txt'
+
+const logger = utils.Logger(LOG_FILE_NAME)
 
 async function scrapeProductPages(){
     return new Promise( async (resolve, reject) => {
@@ -14,12 +17,8 @@ async function scrapeProductPages(){
                 const products_path = '/products'
                 const MAX_PAGES = 4
 
-                //if the target directory for product id's by brand dont exist, create it
-                if (!fs.existsSync(DATA_DIR)){
-                    fs.mkdirSync(DATA_DIR, { recursive: true });  
-                }
-
-                console.log("*** scraping surreyvapes ***")
+                //console.log("*** scraping surreyvapes ***")
+                logger.write("*** scraping surreyvapes ***")
 
                 let page = 1
                 let count = 0
@@ -33,7 +32,8 @@ async function scrapeProductPages(){
 
                         const url = DOMAIN + products_path + page_param + limit_param
 
-                        console.log('scraping ', url)
+                        //console.log('scraping ', url)
+                        logger.write('scraping '+ url)
 
                         const { data } = await axios.get(url)
 
@@ -41,7 +41,7 @@ async function scrapeProductPages(){
 
                         count = count + products.length
                          
-                        utils.writeJSON(DATA_DIR, `page_${page}.json`, products)
+                        utils.writeJSON(DATA_DIR, `page_${page}.json`, products, logger)
                 
                         await (() => new Promise(resolve => setTimeout(resolve, 2500)))();
 
@@ -54,8 +54,10 @@ async function scrapeProductPages(){
 
                 const time_finish = Date.now()
 
-                console.log("scraped total of ", count, " products across ", page, " pages ")
-                console.log("completed scrape in ", (time_finish - time_start)/1000, " seconds")
+                //console.log("scraped total of ", count, " products across ", page, " pages ")
+                logger.write("scraped total of "+ count+ " products across "+ page+ " pages ")
+                //console.log("completed scrape in ", (time_finish - time_start)/1000, " seconds")
+                logger.write("completed scrape in "+ (time_finish - time_start)/1000+ " seconds")
 
                 resolve()
 
@@ -88,7 +90,7 @@ function scrapeProductInfo(html) {
 
   });
     
-  console.log("products scraped:", products.length)
+  logger.write("products scraped: "+ products.length)//console.log("products scraped:", products.length)
 
   return products
 }
@@ -98,12 +100,26 @@ function writeInventory(){
     const all_products = []
 
     fs.readdirSync(DATA_DIR).forEach( (file)=>  
-            utils.readJSON(DATA_DIR, file).forEach( (product)=>all_products.push(product)))   
+            utils.readJSON(DATA_DIR, file, logger).forEach( (product)=>all_products.push(product)))   
             
-
-
-    utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, all_products)
+    utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, all_products, logger)
 }
 
-module.exports = { scrapeProductPages, writeInventory }
+async function execute(){
+
+
+    //create the root data dir if it does not exist
+    if (!fs.existsSync(DATA_DIR)){
+        fs.mkdirSync(DATA_DIR, { recursive: true });  
+    }
+
+    scrapeProductPages().then( 
+        () => writeInventory() 
+    ).catch( 
+        (err) => console.error(err)
+    )
+     
+}
+
+module.exports = { execute }
 

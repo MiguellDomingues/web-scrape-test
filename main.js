@@ -142,6 +142,10 @@ async function b(){
 
 async function wooCommerceTest(){
 
+ 
+  surreyvapes.execute()
+
+
     /*
 
     thunderbirdvapes.scrapeProductPages().then( ()=>{
@@ -152,7 +156,7 @@ async function wooCommerceTest(){
     surreyvapes.writeInventory()
     })
 
-    */
+   
 
   
 
@@ -161,6 +165,8 @@ async function wooCommerceTest(){
         ()=> ezvape.scrapeProductCategories().then( 
         ()=> ezvape.writeInventory() 
     )))
+
+     */
     
      
      

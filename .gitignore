@@ -1,5 +1,6 @@
 raw_pages/
 inventories/
 node_modules/
+logs/
 package-lock.json
 
