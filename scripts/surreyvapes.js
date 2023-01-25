@@ -26,12 +26,13 @@ async function scrapePages(urls, scraper){
                     try{
                         const { data } = await axios.get(url)
                         const scraped_json = scraper(data)
+                        if(scraped_json.length === 0) break
                         logger.writeln("scraped "+ scraped_json.length + " items from "+ url)
                         //console.log("scraped ", scraped_json.length , " items from ", url)
                         scraped_pages.push(scraped_json)
                         await (() => new Promise(resolve => setTimeout(resolve, 2500)))()
                     }catch(err){
-                        console.log("error scraping ", url)
+                        logger.writeln("error scraping "+ url)
                         //console.error(err)
                         break
                     }           
@@ -101,14 +102,14 @@ async function execute(){
         urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
     
     //visit urls, process each url with scraper function, return array of products
-    scrapePages(urls, scrapeProductInfo).then( 
+    scrapePages(urls, scrapeProductInfo)
+    .then( 
         (products) => {
             utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
             utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products, logger)
-        }
-    ).catch( 
-        (err) => console.error(err)
-    )  
+    })
+    .catch( err => console.error(err))
+    .finally(  _=>logger.end())  
 }
 
 module.exports = { execute }

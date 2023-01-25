@@ -10,10 +10,14 @@ const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/ezvape`
 const BRANDS_SUBDIR             = `${DATA_DIR}/brands`
 const CATEGORIES_SUBDIR         = `${DATA_DIR}/categories`
 
-const ALL_PRODUCTS_FILE_NAME    = 'all_products.json'
+const ALL_PRODUCTS_FILE_NAME    = 'products.json'
 const BRAND_LINKS_FILE_NAME     = 'brand_links.json'
 const CATEGORY_LINKS_FILE_NAME  = 'category_links.json'
 const INVENTORY_FILE_NAME       = 'ezvape.json'
+
+const LOG_FILE_NAME             = 'thunderbirdvapes.txt'
+
+const logger = utils.Logger(LOG_FILE_NAME)
 
 
 function scrapeBrands(html){
@@ -77,7 +81,7 @@ function scrapeCategories(html){
     return categories
 }
 
-function scrapeProductId(html){
+function scrapeProductIds(html){
 
     const $ = cheerio.load(html);
 
@@ -105,7 +109,65 @@ function parseProducts(products_by_id){
     return inventory
 }
 
+async function scrapePages(urls, scraper){
+    return new Promise( async (resolve, reject) => {
+        try{      
+                logger.writeln("*** scraping " + DOMAIN + " ***")          
+                const time_start = Date.now()
+                const scraped_pages = []
 
+                for (const url of urls){
+                    try{
+                        const { data } = await axios.get(url)
+                        const scraped_json = scraper(data)
+
+                        if(scraped_json.length === 0) 
+                            break
+
+                       // logger.writeln("scraped "+ 
+                         //   scraped_json.length ? 
+                            //    scraped_json.length+" items" : 
+                       /    //    Object.keys(scraped_json).length+" keys"  
+                       // + " from "+ url)
+                       console.log("scraped")
+
+                        scraped_pages.push(scraped_json)
+                        await (() => new Promise(resolve => setTimeout(resolve, 2500)))()
+                    }catch(err){
+                        logger.writeln("error scraping "+ url)
+                        break
+                    }           
+                }
+
+                //const flat = scraped_pages.flat()        
+                const time_finish = Date.now()
+
+                logger.writeln("completed scrape in " + (time_finish - time_start)/1000 + " seconds")
+                logger.writeln("pages: " + scraped_pages.length + "/" + urls.length)
+                //logger.writeln("items scraped: " + flat.length)
+  
+                resolve(scraped_pages)
+
+        }catch(err){
+            reject(err)
+        }
+    })
+}
+
+
+function scrapeProductsBrandsCategories(html){
+
+    const items = {}
+
+    items.products = scrapeProductInfo(html)
+    items.brands = scrapeBrands(html)
+    items.categories = scrapeCategories(html)
+
+    return items
+}
+
+
+/*
 async function scrapeProductsBrandsCategories(){
     return new Promise( async (resolve, reject) => {
 
@@ -133,6 +195,7 @@ async function scrapeProductsBrandsCategories(){
         }
     })
 }
+*/
 
 async function scrapeProductBrands(){
     return new Promise( async (resolve, reject) => {
@@ -306,4 +369,76 @@ function writeInventory(){
     }
 }
 
-module.exports = { scrapeProductsBrandsCategories, scrapeProductBrands, scrapeProductCategories, writeInventory }
+async function execute(){
+
+    const start_page = 1
+    const end_page = 1
+
+    
+
+    //const url = DOMAIN + `/shop/?per_page=${limit}`
+
+    const subpath = 'shop/'
+    const param = 'per_page=1000'
+
+    
+    //create the root data dir if it does not exist
+    if (!fs.existsSync(DATA_DIR)){
+        fs.mkdirSync(DATA_DIR, { recursive: true });  
+    }
+
+    //const urls = 
+    //const url = [`${DOMAIN}/${subpath}?${param}`]
+    //urls.push(url)
+
+    //generate urls
+    //for(let page = start_page; page <= end_page; page++)
+       // urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
+    
+    //visit urls, process each url with scraper function, return array of products
+    scrapePages([`${DOMAIN}/${subpath}?${param}`], scrapeProductsBrandsCategories)
+    .then( 
+        async (json) => {
+            const products   = json[0].products
+            const brands     = json[0].brands
+            const categories = json[0].categories
+            
+            utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+            utils.writeJSON(DATA_DIR, BRAND_LINKS_FILE_NAME, brands, logger)
+            utils.writeJSON(DATA_DIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
+
+            const subpath = 'buy-vapes-online'
+            const param = `per_page=300`
+            const urls = categories.map( categories => `${DOMAIN}/${subpath}/${categories.link}?${param}` )
+
+            //console.log(urls)
+
+            const products_by_id = {}
+    
+            products.forEach( (product)=> products_by_id[product.id] = { title: product.title, img: product.img, price: product.price })
+
+            await scrapePages(urls, scrapeProductIds).forEach( (category_ids, idx)=>
+                category_ids.forEach( (id) => products_by_id[id] ? products_by_id[id].category = categories[idx].category : undefined )
+            )
+           
+            
+
+
+            
+            
+    
+            //const url = DOMAIN + category_path + category.link + `per_page=300`
+
+            //generate urls
+            //for(let page = start_page; page <= end_page; page++)
+            // urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
+
+
+            
+    })
+    .catch( (err) => console.error(err))
+    .finally(  _=>logger.end())    
+}
+
+module.exports = { execute }
+

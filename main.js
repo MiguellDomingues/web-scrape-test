@@ -143,7 +143,9 @@ async function b(){
 async function wooCommerceTest(){
 
  
-  surreyvapes.execute()
+  //thunderbirdvapes.execute()
+  //surreyvapes.execute()
+  //ezvape.execute()
 
 
     /*
@@ -199,6 +201,39 @@ async function wooCommerceTest(){
   }
 
   wooCommerceTest()
+
+  /*
+const domain = 'https://www.surreyvapes.com'
+
+const subpaths = ['products']
+    
+
+ 
+// DOMAIN / (SUBPATH_0 +/ SUBPATH_1+/ ...SUBPATHN+/) param1 & param2 & f() 
+
+function pageParam(start){
+	let page = start
+  return (()=>`page=${page++}`)()
+}
+
+const params = ['limit=250', pageParam(1)]
+
+function urlGenerator(domain, subpaths, params){
+
+	let url = `${domain}/${subpaths.map( subpath => `${subpath}/`)}`
+              
+   if(params.length > 0){
+   	url = url + `?` + params.shift() + `${params.map( param => '&'+`${param}`)}`
+   }         
+              
+         //`${params.map( param => `&${param}`)}`      
+               
+   return url
+               
+}
+
+console.log( urlGenerator(domain, subpaths, params) )
+  */
 
   
 
