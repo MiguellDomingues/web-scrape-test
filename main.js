@@ -142,10 +142,12 @@ async function b(){
 
 async function wooCommerceTest(){
 
+  
+
  
-  //thunderbirdvapes.execute()
-  //surreyvapes.execute()
-  //ezvape.execute()
+  thunderbirdvapes.execute()
+  surreyvapes.execute()
+  ezvape.execute()
 
 
     /*
