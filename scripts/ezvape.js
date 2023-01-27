@@ -69,6 +69,7 @@ function scrapeProductInfo(html){
 
 function scrapeCategories(html){
 
+    /*
     const $ = cheerio.load(html);
 
     const categories = []
@@ -80,6 +81,24 @@ function scrapeCategories(html){
                 link: $(el).find("a").attr("href").split("/")[4]
         })                          
     })
+    */
+
+    function scrapeSubcategories(category, link, slice_index, element){
+    
+        const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
+        const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
+        categories.push({category: appended_category,link: appended_link})
+    
+        $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
+      }
+    
+      const $ = cheerio.load(html);
+      const categories = []
+    
+      $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
+    
+
+    
 
     return categories
 }
@@ -132,6 +151,8 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
 
     Object.keys(products_by_id).forEach( (key)=>{
 
+       // console.log(key)
+
         const product = products_by_id[key]
 
         if(!('category' in product) && !('brand' in product)) pc_c++       
@@ -149,6 +170,14 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
     logger.writeln("products without category and with brand: "+ pC_c,)
     logger.writeln("products with category and with brand: "+ PC_c,)
     logger.writeln("products without price: "+ p_c,)
+
+    console.log( "products count: "+ Object.keys(products_by_id).length  )
+    console.log( "products without category and without brand: "+ pc_c,  )
+    console.log(  "products with category and without brand: "+ Pc_c, )
+    console.log( "products without category and with brand: "+ pC_c  )
+    console.log(  "products with category and with brand: "+ PC_c, )
+    console.log(  "products without price: "+ p_c, )
+
 
     return normalized_products
 }
@@ -176,7 +205,7 @@ async function getProductIdsByCategory(category_links){
 
     subpath = 'buy-vapes-online'
     param = `per_page=300`
-    urls = category_links.map( categories => `${DOMAIN}/${subpath}/${categories.link}?${param}`)
+    urls = category_links.map( categories => `${DOMAIN}/${subpath}${categories.link}?${param}`)
 
     const product_ids_by_category = {}
     const product_ids = await utils.scrapePages(urls, scrapeProductIds, logger)
@@ -202,28 +231,41 @@ async function execute(){
 
     try{
         ///////////////////stage 1//////////////////////////////////
-        const json = await getProductsAndBrandCategoryLinks()
+        //const json = await getProductsAndBrandCategoryLinks()
 
-        const {products, brands, categories } = json
+       // const {products, brands, categories } = json
        
-        utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
-        utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
-        utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
+       // utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+       // utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
+        //utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
+
+        
 
         ////////////////////stage 2.a//////////////////////////////////
 
-        const product_ids_by_category = await getProductIdsByCategory(categories)
-        utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
+        //const product_ids_by_category = await getProductIdsByCategory(categories)
+
+        //console.log(product_ids_by_category)
+        //utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
+const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+        const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', logger)
+        const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids.json', logger)
+
 
         ////////////////////stage 2.b//////////////////////////////////
 
-        const product_ids_by_brand = await getProductIdsByBrand(brands)
-        utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids.json', product_ids_by_brand, logger)
+        //const product_ids_by_brand = await getProductIdsByBrand(brands)
+       // utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids.json', product_ids_by_brand, logger)
 
         ////////////////////////////////////// stage 3////////////////////////////////////////////////
 
-        const normalized_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
-        utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, normalized_products, logger)
+        
+
+    const normalized_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
+
+    //console.log(normalized_products)
+    
+    utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, normalized_products, logger)
     }
     catch(err){
         console.error(err)

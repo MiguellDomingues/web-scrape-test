@@ -7,7 +7,7 @@ const fs = require("fs");
 const ezvape      = require("./scripts/ezvape")
 const surreyvapes = require("./scripts/surreyvapes")
 const thunderbirdvapes = require("./scripts/thunderbirdvapes")
-const westsidesmokes = require("./scripts/westsidesmokes")
+
 
 
 
@@ -104,138 +104,102 @@ async function b(){
   */
 
 
-  async function shopifyTest (){
-
-    //collections = await shopify.fetchCollections('www.thunderbirdvapes.com')
-
-    //console.log(collections.length)
-
-    //shopify.writeCollection('www.thunderbirdvapes.com', collections)
-
-    const handles = shopify.readCollectionHandles('www.thunderbirdvapes.com')
-
-    /*
-   
-    for (const handle of handles) {
-        const products = await shopify.fetchProductsByHandle('www.thunderbirdvapes.com' , handle)
-        console.log(handle, products.length)
-        products.length > 0 && shopify.writeProductsByHandle('www.thunderbirdvapes.com' ,handle, products)
-        await (() => new Promise(resolve => setTimeout(resolve, 2500)))();
-    }
-
-    */
-
-    let count = 0
-
-    const parsed_products = shopify.readProducts('www.thunderbirdvapes.com').map( (product)=>{
-        product.variants && product.variants.length > 0 && count++
-        return shopify.parseProduct(product)
-    })
-
-    console.log(parsed_products.length, " ",count)
-
-  }
-
-  //shopifyTest()
-
-
-
 async function wooCommerceTest(){
 
-  
-
- 
-  thunderbirdvapes.execute()
-  surreyvapes.execute()
+  //thunderbirdvapes.execute()
+  //surreyvapes.execute()
   ezvape.execute()
-
-
-    /*
-
-    thunderbirdvapes.scrapeProductPages().then( ()=>{
-        thunderbirdvapes.writeInventory()
-    })
-
-  surreyvapes.scrapeProductPages().then( ()=>{
-    surreyvapes.writeInventory()
-    })
-
-   
-
-  
-
-    ezvape.scrapeProductsBrandsCategories().then( 
-        ()=> ezvape.scrapeProductBrands().then( 
-        ()=> ezvape.scrapeProductCategories().then( 
-        ()=> ezvape.writeInventory() 
-    )))
-
-     */
-    
-     
-     
-
-    //scrapeProductsBrandsCategories, scrapeProductBrands, scrapeProductCategories, mergeProductBrandsCategories
-    
-
-    //https://www.thunderbirdvapes.com/products.json?limit=1000
-
-   // const { data } = await axios.get('https://www.thunderbirdvapes.com/products.json?limit=250&page=5')
-
-  //  console.log(data["products"].length)
-
-   
-
-    
-
-    //surreyvapes.scrapeProductPages()
-
-    //surreyvapes.writeInventory()
-
-    //ezvape.mergeProductBrandsCategories()
-
-    //ezvape.scrapeProductCategories()
-
-    //ezvape.scrapeProductBrands()
-
-    //ezvape.scrapeProductsBrandsCategories()
 
   }
 
-  wooCommerceTest()
+wooCommerceTest()
 
-  /*
-const domain = 'https://www.surreyvapes.com'
+ 
 
-const subpaths = ['products']
+
+
+
+
+/*
+
+const html = fs.readFileSync('test.html', {encoding:'utf8', flag:'r'})
+function f1(html){
+
+  function scrapeSubcategories(category, link, slice_index, element){
+    
+    const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
+    const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
+    categories.push({category: appended_category,link: appended_link})
+
+    $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
+  }
+
+  const $ = cheerio.load(html);
+  const categories = []
+
+  $(".product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
+
+  console.log(categories)
+}
+
+
+
+
+  function f2(html){
+
+  const $ = cheerio.load(html);
+
+  const categories = []
+
+  $(".product-categories").children().each( (idx,el) => {
+
+    const category = $(el).find("a").filter( (index) => index === 0 ).text()
+    const link = $(el).find("a").attr("href").split("/")[4]
+    const subcategories = []
+
+    function scrapeSubcategories(category, link, slice_index, element){
+      $(element).find("> .children").children().each( (idx, _el) => { 
+          const appended_category = category + "/" + $(_el).find("a").filter( (index) => index === 0 ).text() 
+          const appended_link = link+ "/" + $(_el).find(">a").attr("href").split("/").slice(slice_index).join("/")
+          subcategories.push({category: appended_category,link: appended_link})
+          scrapeSubcategories(appended_category, appended_link, ++slice_index, _el)
+      })   
+    }
+
+    scrapeSubcategories(category, link, 4, el)
+
+    categories.push({
+      category: category,
+      link: link,
+      subcategories: subcategories
+    })         
+  })
+
+  let x = 0
+
+  categories.forEach( (a)=>{
+    x = x + a.subcategories.length
+  })
+
+  console.log( x + categories.length)
+
+}
+
+f1(html)
+
+*/
+
+
+
+ 
+
+
+
+
+
     
 
  
-// DOMAIN / (SUBPATH_0 +/ SUBPATH_1+/ ...SUBPATHN+/) param1 & param2 & f() 
-
-function pageParam(start){
-	let page = start
-  return (()=>`page=${page++}`)()
-}
-
-const params = ['limit=250', pageParam(1)]
-
-function urlGenerator(domain, subpaths, params){
-
-	let url = `${domain}/${subpaths.map( subpath => `${subpath}/`)}`
-              
-   if(params.length > 0){
-   	url = url + `?` + params.shift() + `${params.map( param => '&'+`${param}`)}`
-   }         
-              
-         //`${params.map( param => `&${param}`)}`      
-               
-   return url
-               
-}
-
-console.log( urlGenerator(domain, subpaths, params) )
-  */
 
   
 
