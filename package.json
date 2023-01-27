@@ -3,6 +3,9 @@
     "axios": "^1.2.2",
     "cheerio": "^1.0.0-rc.12",
     "express": "^4.18.2",
-    "pretty": "^2.0.0"
+    "graphql": "^16.6.0",
+    "pretty": "^2.0.0",
+    "valid-url": "^1.0.9",
+    "winston": "^3.8.2"
   }
 }

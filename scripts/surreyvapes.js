@@ -1,15 +1,16 @@
 const cheerio = require("cheerio");
 const fs = require("fs");
 const utils = require("../utils.js")
+const winston = require("winston")
 
 const DOMAIN                    = 'https://www.surreyvapes.com'
 const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/surreyvapes`
 
 const ALL_PRODUCTS_FILE_NAME    = 'products.json'
 const INVENTORY_FILE_NAME       = 'surreyvapes.json'
-const LOG_FILE_NAME             = 'surreyvapes.txt'
+const LOG_FILE_NAME             = 'surreyvapes'
 
-const logger = utils.Logger(LOG_FILE_NAME)
+const logger = utils.getLogger(LOG_FILE_NAME)
 
 function scrapeProductInfo(html) {
 
@@ -48,7 +49,6 @@ async function execute(){
     const page_param = (page)=>`page=${page}`
     const limit_param = 'limit=250'
 
-    
     //create the root data dir if it does not exist
     if (!fs.existsSync(DATA_DIR)){
         fs.mkdirSync(DATA_DIR, { recursive: true });  
@@ -64,14 +64,14 @@ async function execute(){
     utils.scrapePages(urls, scrapeProductInfo,logger)
     .then( 
         (products) => {
+            products = products.flat()
             utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
             utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products, logger)
     })
     .catch( err => console.error(err))
     .finally( ()=>{
         const time_finish = Date.now()
-        console.log("completed " +DOMAIN+ " scrape in " + (time_finish - time_start)/1000 + " seconds")
-        logger.end() 
+        logger.info("processed " +DOMAIN+ " execution in " + (time_finish - time_start)/1000 + " seconds")
     }  ) 
 }
 

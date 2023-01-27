@@ -1,14 +1,15 @@
 const fs = require("fs");
 const utils = require("../utils.js")
+const winston = require("winston")
 
 const DOMAIN                    = 'https://www.thunderbirdvapes.com'
 const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/thunderbirdvapes`
 
 const ALL_PRODUCTS_FILE_NAME    = 'products.json'
 const INVENTORY_FILE_NAME       = 'thunderbirdvapes.json'
-const LOG_FILE_NAME             = 'thunderbirdvapes.txt'
+const LOG_FILE_NAME             = 'thunderbirdvapes'
 
-const logger = utils.Logger(LOG_FILE_NAME)
+const logger = utils.getLogger(LOG_FILE_NAME)
 
 function parseProduct(product){
 
@@ -49,14 +50,14 @@ async function execute(){
     utils.scrapePages(urls, json=>json["products"],logger)
     .then( 
         (products) => {
+            products = products.flat()
             utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
             utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products.map( product=>parseProduct(product)), logger)
     })
     .catch( (err) => console.error(err))
     .finally( ()=>{
         const time_finish = Date.now()
-        console.log("completed " +DOMAIN+ " scrape in " + (time_finish - time_start)/1000 + " seconds")
-        logger.end() 
+        logger.info("processed " +DOMAIN+ " execution in " + (time_finish - time_start)/1000 + " seconds") 
     }  )
 }
 

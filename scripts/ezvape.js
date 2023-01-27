@@ -5,7 +5,6 @@ const utils = require("../utils.js")
 const DOMAIN                    = 'https://ezvape.com'
 
 const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/ezvape`
-
 const BRANDS_SUBDIR             = `${DATA_DIR}/brands`
 const CATEGORIES_SUBDIR         = `${DATA_DIR}/categories`
 
@@ -16,11 +15,10 @@ if (!fs.existsSync(CATEGORIES_SUBDIR))fs.mkdirSync(CATEGORIES_SUBDIR, { recursiv
 const ALL_PRODUCTS_FILE_NAME    = 'products.json'
 const BRAND_LINKS_FILE_NAME     = 'brand_links.json'
 const CATEGORY_LINKS_FILE_NAME  = 'category_links.json'
-
+const LOG_FILE_NAME             = 'ezvape'
 const INVENTORY_FILE_NAME       = 'ezvape.json'
-const LOG_FILE_NAME             = 'ezvape.txt'
 
-const logger = utils.Logger(LOG_FILE_NAME)
+const logger = utils.getLogger(LOG_FILE_NAME)
 
 
 function scrapeBrands(html){
@@ -130,7 +128,7 @@ function scrapeProductsBrandsCategories(html){
 
 function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category_product_ids)
 {
-    logger.writeln("**** adding brands and categories to products ****")
+    logger.info("**** adding brands and categories to products ****")
 
     const products_by_id = {}
 
@@ -164,19 +162,19 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
         normalized_products.push( {id: key, ...product} )
     })
 
-    logger.writeln("products count: "+ Object.keys(products_by_id).length )
-    logger.writeln("products without category and without brand: "+ pc_c,)
-    logger.writeln("products with category and without brand: "+ Pc_c,)
-    logger.writeln("products without category and with brand: "+ pC_c,)
-    logger.writeln("products with category and with brand: "+ PC_c,)
-    logger.writeln("products without price: "+ p_c,)
+    logger.info("products count: "+ Object.keys(products_by_id).length )
+    logger.info("products without category and without brand: "+ pc_c,)
+    logger.info("products with category and without brand: "+ Pc_c,)
+    logger.info("products without category and with brand: "+ pC_c,)
+    logger.info("products with category and with brand: "+ PC_c,)
+    logger.info("products without price: "+ p_c,)
 
-    console.log( "products count: "+ Object.keys(products_by_id).length  )
-    console.log( "products without category and without brand: "+ pc_c,  )
-    console.log(  "products with category and without brand: "+ Pc_c, )
-    console.log( "products without category and with brand: "+ pC_c  )
-    console.log(  "products with category and with brand: "+ PC_c, )
-    console.log(  "products without price: "+ p_c, )
+   // console.log( "products count: "+ Object.keys(products_by_id).length  )
+  //  console.log( "products without category and without brand: "+ pc_c,  )
+  //  console.log(  "products with category and without brand: "+ Pc_c, )
+  //  console.log( "products without category and with brand: "+ pC_c  )
+  //  console.log(  "products with category and with brand: "+ PC_c, )
+  //  console.log(  "products without price: "+ p_c, )
 
 
     return normalized_products
@@ -228,6 +226,7 @@ async function getProductsAndBrandCategoryLinks(){
 async function execute(){
 
     const time_start = Date.now()
+    logger.info("**************************executing " +DOMAIN+ " process***********************************************")
 
     try{
         ///////////////////stage 1//////////////////////////////////
@@ -247,7 +246,7 @@ async function execute(){
 
         //console.log(product_ids_by_category)
         //utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
-const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+        const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
         const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', logger)
         const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids.json', logger)
 
@@ -272,9 +271,78 @@ const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
     }
     finally{
         const time_finish = Date.now()
-        console.log("completed " +DOMAIN+ " scrape in " + (time_finish - time_start)/1000 + " seconds")
-        logger.end() 
+        logger.info("processed " +DOMAIN+ " execution in " +  (time_finish - time_start)/1000 + " seconds")
+        
     }
 }
 
 module.exports = { execute }
+
+/*
+
+const html = fs.readFileSync('test.html', {encoding:'utf8', flag:'r'})
+function f1(html){
+
+  function scrapeSubcategories(category, link, slice_index, element){
+    
+    const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
+    const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
+    categories.push({category: appended_category,link: appended_link})
+
+    $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
+  }
+
+  const $ = cheerio.load(html);
+  const categories = []
+
+  $(".product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
+
+  console.log(categories)
+}
+
+
+
+
+  function f2(html){
+
+  const $ = cheerio.load(html);
+
+  const categories = []
+
+  $(".product-categories").children().each( (idx,el) => {
+
+    const category = $(el).find("a").filter( (index) => index === 0 ).text()
+    const link = $(el).find("a").attr("href").split("/")[4]
+    const subcategories = []
+
+    function scrapeSubcategories(category, link, slice_index, element){
+      $(element).find("> .children").children().each( (idx, _el) => { 
+          const appended_category = category + "/" + $(_el).find("a").filter( (index) => index === 0 ).text() 
+          const appended_link = link+ "/" + $(_el).find(">a").attr("href").split("/").slice(slice_index).join("/")
+          subcategories.push({category: appended_category,link: appended_link})
+          scrapeSubcategories(appended_category, appended_link, ++slice_index, _el)
+      })   
+    }
+
+    scrapeSubcategories(category, link, 4, el)
+
+    categories.push({
+      category: category,
+      link: link,
+      subcategories: subcategories
+    })         
+  })
+
+  let x = 0
+
+  categories.forEach( (a)=>{
+    x = x + a.subcategories.length
+  })
+
+  console.log( x + categories.length)
+
+}
+
+f1(html)
+
+*/
