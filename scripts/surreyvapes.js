@@ -1,13 +1,12 @@
 const cheerio = require("cheerio");
 const fs = require("fs");
 const utils = require("../utils.js")
-const winston = require("winston")
 
 const DOMAIN                    = 'https://www.surreyvapes.com'
 const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/surreyvapes`
 
-const ALL_PRODUCTS_FILE_NAME    = 'products.json'
-const INVENTORY_FILE_NAME       = 'surreyvapes.json'
+const ALL_PRODUCTS_FILE_NAME    = 'products'
+const INVENTORY_FILE_NAME       = 'surreyvapes'
 const LOG_FILE_NAME             = 'surreyvapes'
 
 const logger = utils.getLogger(LOG_FILE_NAME)
@@ -68,7 +67,7 @@ async function execute(){
             utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
             utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products, logger)
     })
-    .catch( err => console.error(err))
+    .catch( err => logger.error(err))
     .finally( ()=>{
         const time_finish = Date.now()
         logger.info("processed " +DOMAIN+ " execution in " + (time_finish - time_start)/1000 + " seconds")

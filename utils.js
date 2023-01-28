@@ -14,7 +14,7 @@ if (!fs.existsSync(LOGS_DIR))fs.mkdirSync(LOGS_DIR , { recursive: true });
 
 function writeJSON(dir, file_name, json, logger){
     //TODO check for empty json
-    const path = dir + `/` + file_name
+    const path = `${dir}/${file_name}.json`
     fs.writeFileSync(path, JSON.stringify(json, null, 2) );
 
     if(!json.length && Object.keys(json).length){ // if json is an object of string keys and array values:
@@ -30,8 +30,8 @@ function writeJSON(dir, file_name, json, logger){
 }
 
 function readJSON(dir, file_name, logger){
-    const path = dir + `/` + file_name
-    const json = JSON.parse(fs.readFileSync(dir + '/' + file_name, {encoding:'utf8', flag:'r'}))
+    const path = `${dir}/${file_name}.json`
+    const json = JSON.parse(fs.readFileSync(path, {encoding:'utf8', flag:'r'}))
     if(!json.length && Object.keys(json).length){
         let items = 0
         Object.keys(json).forEach( key => items = items + json[key].length )
@@ -45,11 +45,12 @@ function readJSON(dir, file_name, logger){
     return json
 }
 
-const myFormat = printf(({ message, timestamp }) => {
-    return `${timestamp} ${message}`;
-});
-
 function getLogger(log_file_name){
+
+    const myFormat = printf(({ message, timestamp }) => {
+        return `${timestamp} ${message}`;
+    });
+
     return (function (){
         return createLogger({
             format: combine(
@@ -88,19 +89,13 @@ async function scrapePages(urls, scraper, logger){
                         await (() => new Promise(resolve => setTimeout(resolve, 2500)))()
                     }catch(err){
                         logger.info("error scraping "+ url)
-                        //logger.writeln("error scraping "+ url)
-                       // console.error(err)
                         break
                     }           
                 }
-
-                //const flat = scraped_pages.flat()        
+      
                 const time_finish = Date.now()
-
                 logger.info("completed scrape in " + (time_finish - time_start)/1000 + " seconds")
                 logger.info("pages: " + scraped_pages.length + "/" + urls.length)
-                //logger.writeln("items scraped: " + flat.length)
-  
                 resolve(scraped_pages)
 
         }catch(err){

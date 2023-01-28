@@ -8,98 +8,18 @@ const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/ezvape`
 const BRANDS_SUBDIR             = `${DATA_DIR}/brands`
 const CATEGORIES_SUBDIR         = `${DATA_DIR}/categories`
 
+//TODO PUT THIS INTO A UTIL FUNCTION MAKEDIRS(DATA DIR, [BRANDS_SUBDIR, CATEGORIES_SUBDIR])
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });  
 if (!fs.existsSync(BRANDS_SUBDIR))fs.mkdirSync(BRANDS_SUBDIR, { recursive: true });  
 if (!fs.existsSync(CATEGORIES_SUBDIR))fs.mkdirSync(CATEGORIES_SUBDIR, { recursive: true });  
 
-const ALL_PRODUCTS_FILE_NAME    = 'products.json'
-const BRAND_LINKS_FILE_NAME     = 'brand_links.json'
-const CATEGORY_LINKS_FILE_NAME  = 'category_links.json'
+const ALL_PRODUCTS_FILE_NAME    = 'products'
+const BRAND_LINKS_FILE_NAME     = 'brand_links'
+const CATEGORY_LINKS_FILE_NAME  = 'category_links'
 const LOG_FILE_NAME             = 'ezvape'
-const INVENTORY_FILE_NAME       = 'ezvape.json'
+const INVENTORY_FILE_NAME       = 'ezvape'
 
 const logger = utils.getLogger(LOG_FILE_NAME)
-
-
-function scrapeBrands(html){
-
-    const $ = cheerio.load(html);
-
-    const brands = []
-
-    $("#kapee-product-brand-2 .kapee_product_brands").children().each( (idx,el) => {
-
-       if(idx !== 0){
-            brands.push({
-                brand: $(el).find("a").text(),
-                link: $(el).find("a").attr("href").split("/")[4]
-            })                 
-        }      
-    })
-
-    return brands
-}
-
-function scrapeProductInfo(html){
-
-    const $ = cheerio.load(html);
-
-    const products_by_id = []
-
-    $("#primary .products").children().each( (idx,el) => {
-
-        const id =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-buttons-variations .cart-button a").attr("data-product_id") ;
-        const img = $(el).find(".product-wrapper .product-image a img").attr('src') ;
-        const title = $(el).find(".product-wrapper .product-info .product-title-rating a").text()
-        const price =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-price .price .amount bdi").first().text()
-
-        products_by_id.push({
-            id: id,
-            title: title,
-            img: img,
-            price: price
-        })
-    })
-
-    return products_by_id
-
-}
-
-function scrapeCategories(html){
-
-    /*
-    const $ = cheerio.load(html);
-
-    const categories = []
-
-    $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => {
-
-       categories.push({
-                category: $(el).find("a").filter( (index) => index === 0 ).text(),
-                link: $(el).find("a").attr("href").split("/")[4]
-        })                          
-    })
-    */
-
-    function scrapeSubcategories(category, link, slice_index, element){
-    
-        const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
-        const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
-        categories.push({category: appended_category,link: appended_link})
-    
-        $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
-      }
-    
-      const $ = cheerio.load(html);
-      const categories = []
-    
-      $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
-    
-
-    
-
-    return categories
-}
 
 function scrapeProductIds(html){
 
@@ -116,6 +36,87 @@ function scrapeProductIds(html){
 }
 
 function scrapeProductsBrandsCategories(html){
+
+    function scrapeBrands(html){
+
+        const $ = cheerio.load(html);
+    
+        const brands = []
+    
+        $("#kapee-product-brand-2 .kapee_product_brands").children().each( (idx,el) => {
+    
+           if(idx !== 0){
+                brands.push({
+                    brand: $(el).find("a").text(),
+                    link: $(el).find("a").attr("href").split("/")[4]
+                })                 
+            }      
+        })
+    
+        return brands
+    }
+    
+    function scrapeProductInfo(html){
+    
+        const $ = cheerio.load(html);
+    
+        const products_by_id = []
+    
+        $("#primary .products").children().each( (idx,el) => {
+    
+            const id =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-buttons-variations .cart-button a").attr("data-product_id") ;
+            const img = $(el).find(".product-wrapper .product-image a img").attr('src') ;
+            const title = $(el).find(".product-wrapper .product-info .product-title-rating a").text()
+            const price =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-price .price .amount bdi").first().text()
+    
+            products_by_id.push({
+                id: id,
+                title: title,
+                img: img,
+                price: price
+            })
+        })
+    
+        return products_by_id
+    
+    }
+    
+    function scrapeCategories(html){
+    
+        /*
+        const $ = cheerio.load(html);
+    
+        const categories = []
+    
+        $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => {
+    
+           categories.push({
+                    category: $(el).find("a").filter( (index) => index === 0 ).text(),
+                    link: $(el).find("a").attr("href").split("/")[4]
+            })                          
+        })
+        */
+    
+        function scrapeSubcategories(category, link, slice_index, element){
+        
+            const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
+            const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
+            categories.push({category: appended_category,link: appended_link})
+        
+            $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
+          }
+        
+          const $ = cheerio.load(html);
+          const categories = []
+        
+          $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
+        
+    
+        
+    
+        return categories
+    }
+    
 
     const items = {}
 
@@ -168,14 +169,6 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
     logger.info("products without category and with brand: "+ pC_c,)
     logger.info("products with category and with brand: "+ PC_c,)
     logger.info("products without price: "+ p_c,)
-
-   // console.log( "products count: "+ Object.keys(products_by_id).length  )
-  //  console.log( "products without category and without brand: "+ pc_c,  )
-  //  console.log(  "products with category and without brand: "+ Pc_c, )
-  //  console.log( "products without category and with brand: "+ pC_c  )
-  //  console.log(  "products with category and with brand: "+ PC_c, )
-  //  console.log(  "products without price: "+ p_c, )
-
 
     return normalized_products
 }
@@ -247,8 +240,8 @@ async function execute(){
         //console.log(product_ids_by_category)
         //utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
         const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
-        const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', logger)
-        const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids.json', logger)
+        const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
+        const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
 
 
         ////////////////////stage 2.b//////////////////////////////////
@@ -267,12 +260,11 @@ async function execute(){
     utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, normalized_products, logger)
     }
     catch(err){
-        console.error(err)
+        logger.error(err)
     }
     finally{
         const time_finish = Date.now()
-        logger.info("processed " +DOMAIN+ " execution in " +  (time_finish - time_start)/1000 + " seconds")
-        
+        logger.info("processed " +DOMAIN+ " execution in " +  (time_finish - time_start)/1000 + " seconds")      
     }
 }
 
