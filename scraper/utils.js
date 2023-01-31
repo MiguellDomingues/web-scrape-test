@@ -4,13 +4,18 @@ const axios = require("axios");
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, label, printf } = format;
 
-const ROOT_DATA_DIR     = 'raw_pages'
-const INVENTORIES_DIR   = 'inventories'
-const LOGS_DIR          = 'logs'
+const ROOT              = 'scraper'
+const ROOT_DATA_DIR     = `${ROOT}/raw_pages`
+const INVENTORIES_DIR   = `${ROOT}/inventories`
+const LOGS_DIR          = `${ROOT}/logs`
 
-if (!fs.existsSync(ROOT_DATA_DIR)) fs.mkdirSync(ROOT_DATA_DIR, { recursive: true });  
-if (!fs.existsSync(INVENTORIES_DIR))fs.mkdirSync(INVENTORIES_DIR, { recursive: true });  
-if (!fs.existsSync(LOGS_DIR))fs.mkdirSync(LOGS_DIR , { recursive: true });
+const REQUEST_TIME_OUT   = 2500 //time in ms between requests
+
+createDirs([ROOT_DATA_DIR, INVENTORIES_DIR, LOGS_DIR])
+
+function createDirs(dirs){
+    dirs.forEach( dir => !fs.existsSync(dir) && fs.mkdirSync(dir, { recursive: true }) )
+}
 
 function writeJSON(dir, file_name, json, logger){
     //TODO check for empty json
@@ -66,6 +71,7 @@ function getLogger(log_file_name){
     })()
 }
 
+//TODO: the scraper function should return a object of just key->arr's, instead of an arr OR an object of key->arrs
 async function scrapePages(urls, scraper, logger){
     return new Promise( async (resolve, reject) => {
         try{               
@@ -86,7 +92,7 @@ async function scrapePages(urls, scraper, logger){
                             logger.info("scraped "+ Object.keys(scraped_json).length + " keys from "+ url)
                                           
                         scraped_pages.push(scraped_json)
-                        await (() => new Promise(resolve => setTimeout(resolve, 2500)))()
+                        await (() => new Promise(resolve => setTimeout(resolve, REQUEST_TIME_OUT)))()
                     }catch(err){
                         logger.info("error scraping "+ url)
                         break
@@ -104,4 +110,4 @@ async function scrapePages(urls, scraper, logger){
     })
 }
 
-module.exports = { writeJSON, readJSON, getLogger, scrapePages, ROOT_DATA_DIR, INVENTORIES_DIR }
+module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, ROOT_DATA_DIR, INVENTORIES_DIR }

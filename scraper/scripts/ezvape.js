@@ -1,5 +1,4 @@
 const cheerio = require("cheerio");
-const fs = require("fs");
 const utils = require("../utils.js")
 
 const DOMAIN                    = 'https://ezvape.com'
@@ -8,10 +7,7 @@ const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/ezvape`
 const BRANDS_SUBDIR             = `${DATA_DIR}/brands`
 const CATEGORIES_SUBDIR         = `${DATA_DIR}/categories`
 
-//TODO PUT THIS INTO A UTIL FUNCTION MAKEDIRS(DATA DIR, [BRANDS_SUBDIR, CATEGORIES_SUBDIR])
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });  
-if (!fs.existsSync(BRANDS_SUBDIR))fs.mkdirSync(BRANDS_SUBDIR, { recursive: true });  
-if (!fs.existsSync(CATEGORIES_SUBDIR))fs.mkdirSync(CATEGORIES_SUBDIR, { recursive: true });  
+utils.createDirs([DATA_DIR, BRANDS_SUBDIR, CATEGORIES_SUBDIR])
 
 const ALL_PRODUCTS_FILE_NAME    = 'products'
 const BRAND_LINKS_FILE_NAME     = 'brand_links'
@@ -97,11 +93,12 @@ function scrapeProductsBrandsCategories(html){
         })
         */
     
+        //get the nested sub-categories within each category
         function scrapeSubcategories(category, link, slice_index, element){
         
             const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
             const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
-            categories.push({category: appended_category,link: appended_link})
+            categories.push({category: appended_category,link: appended_link}) //TODO: remove the hanging "/" on the last appended string
         
             $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
           }
@@ -214,6 +211,52 @@ async function getProductsAndBrandCategoryLinks(){
     return json[0]
 }
 
+module.exports = ( () => {
+    return new Promise( async (resolve) => {
+        const time_start = Date.now()
+        logger.info("**************************executing " +DOMAIN+ " process***********************************************")
+
+        try{
+            ///////////////////stage 1////////////////////////////////// scrape the product id/img/price/name without category/brands; scrape the category/brand links
+            const json = await getProductsAndBrandCategoryLinks()
+
+            const {products, brands, categories } = json
+        
+            utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+            utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
+            utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
+
+            ////////////////////stage 2.a////////////////////////////////// visit each category url; scrape the product ids
+
+            const product_ids_by_category = await getProductIdsByCategory(categories)
+            utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
+
+            // const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+            //const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
+            //const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
+
+            ////////////////////stage 2.b////////////////////////////////// visit the each brand url; scrape the product ids
+
+            const product_ids_by_brand = await getProductIdsByBrand(brands)
+            utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids.json', product_ids_by_brand, logger)
+
+            ////////////////////////////////////// stage 3//////////////////////////////////////////////// merge the products with brand/category by id
+
+            const merged_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
+            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, merged_products, logger)
+        }
+        catch(err){
+            logger.error(err)
+        }
+        finally{
+            const time_finish = Date.now()
+            logger.info("processed " +DOMAIN+ " execution in " +  (time_finish - time_start)/1000 + " seconds")    
+            resolve()  
+        }
+    })
+})()
+
+/*
 async function execute(){
 
     const time_start = Date.now()
@@ -237,9 +280,10 @@ async function execute(){
 
         //console.log(product_ids_by_category)
         //utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
-        const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
-        const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
-        const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
+
+        //const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+        //const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
+        //const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
 
 
         ////////////////////stage 2.b//////////////////////////////////
@@ -267,7 +311,7 @@ async function execute(){
 }
 
 module.exports = { execute }
-
+*/
 /*
 
 const html = fs.readFileSync('test.html', {encoding:'utf8', flag:'r'})

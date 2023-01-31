@@ -5,12 +5,6 @@ const pretty = require("pretty");
 const fs = require("fs");
 const url = require('url');   
 
-const ezvape      = require("./scripts/ezvape")
-const surreyvapes = require("./scripts/surreyvapes")
-const thunderbirdvapes = require("./scripts/thunderbirdvapes")
-
-const inventory = require("./inventory")
-
 var app                   = express();
 PORT = 8080
 
@@ -62,7 +56,7 @@ async function b(){
  // console.log(new Date().toISOString().split('.')[0]); // 9/17/2016
  // console.log( isValidUrl('ww/fdegrtgrfdg//,com') )
 
-
+/*
 async function testing(){
 
   let tbv = false, sv = false
@@ -95,7 +89,7 @@ async function testing(){
 testing()
 
 
-/*
+
 
  function isValidUrl(string) {
     try {
