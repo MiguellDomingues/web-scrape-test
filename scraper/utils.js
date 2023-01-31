@@ -72,19 +72,20 @@ function getLogger(log_file_name){
 }
 
 //TODO: the scraper function should return a object of just key->arr's, instead of an arr OR an object of key->arrs
+// 
 async function scrapePages(urls, scraper, logger){
     return new Promise( async (resolve, reject) => {
         try{               
                 const time_start = Date.now()
                 const scraped_pages = []
 
-                for (const url of urls){
+                for (const url of urls){ //loop will exit if url 404's, scraper function returns empty obj, or on any exception
                     try{
-                        const { data } = await axios.get(url)
+                        const { data } = await axios.get(url) 
                         const scraped_json = scraper(data)
 
                         if(scraped_json.length === 0) 
-                            break
+                            break 
 
                         if(scraped_json.length) 
                             logger.info("scraped "+ scraped_json.length + " items from "+ url)
@@ -94,8 +95,8 @@ async function scrapePages(urls, scraper, logger){
                         scraped_pages.push(scraped_json)
                         await (() => new Promise(resolve => setTimeout(resolve, REQUEST_TIME_OUT)))()
                     }catch(err){
-                        logger.info("error scraping "+ url)
-                        break
+                        logger.info("error scraping "+ url) 
+                        break 
                     }           
                 }
       
