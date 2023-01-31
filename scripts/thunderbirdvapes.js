@@ -4,6 +4,9 @@ const utils = require("../utils.js")
 const DOMAIN                    = 'https://www.thunderbirdvapes.com'
 const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/thunderbirdvapes`
 
+//create the root data dir if it does not exist
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });  
+
 const ALL_PRODUCTS_FILE_NAME    = 'products'
 const INVENTORY_FILE_NAME       = 'thunderbirdvapes'
 const LOG_FILE_NAME             = 'thunderbirdvapes'
@@ -25,39 +28,40 @@ function parseProduct(product){
 
 async function execute(){
 
-    const time_start = Date.now()
+    return new Promise( (resolve) => {
 
-    const start_page = 1
-    const end_page = 6
+        logger.info("**************************executing " +DOMAIN+ " process***********************************************")
 
-    const subpath = 'products.json'
-    const page_param = (page)=>`page=${page}`
-    const limit_param = 'limit=250'
+        const time_start = Date.now()
 
-    //create the root data dir if it does not exist
-    if (!fs.existsSync(DATA_DIR)){
-        fs.mkdirSync(DATA_DIR, { recursive: true });  
-    }
+        const start_page = 1
+        const end_page = 6
 
-    const urls = []
+        const subpath = 'products.json'
+        const page_param = (page)=>`page=${page}`
+        const limit_param = 'limit=250'
 
-    //generate urls
-    for(let page = start_page; page <= end_page; page++)
-        urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
-    
-    //visit urls, process each url with scraper function, return array of products
-    utils.scrapePages(urls, json=>json["products"],logger)
-    .then( 
-        (products) => {
-            products = products.flat()
-            utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
-            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products.map( product=>parseProduct(product)), logger)
+        const urls = []
+
+        //generate urls
+        for(let page = start_page; page <= end_page; page++)
+            urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
+        
+        //visit urls, process each url with scraper function, return array of products
+        utils.scrapePages(urls, json=>json["products"],logger)
+        .then( 
+            (products) => {
+                products = products.flat()
+                utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+                utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products.map( product=>parseProduct(product)), logger)
+        })
+        .catch( (err) => logger.error(err))
+        .finally( ()=>{
+            const time_finish = Date.now()
+            logger.info("processed " +DOMAIN+ " execution in " + (time_finish - time_start)/1000 + " seconds")
+            resolve() 
+        })
     })
-    .catch( (err) => logger.error(err))
-    .finally( ()=>{
-        const time_finish = Date.now()
-        logger.info("processed " +DOMAIN+ " execution in " + (time_finish - time_start)/1000 + " seconds") 
-    }  )
 }
 
 module.exports = { execute }

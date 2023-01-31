@@ -5,16 +5,11 @@ const pretty = require("pretty");
 const fs = require("fs");
 const url = require('url');   
 
-
-
-
-
-
-
-
 const ezvape      = require("./scripts/ezvape")
 const surreyvapes = require("./scripts/surreyvapes")
 const thunderbirdvapes = require("./scripts/thunderbirdvapes")
+
+const inventory = require("./inventory")
 
 var app                   = express();
 PORT = 8080
@@ -63,7 +58,46 @@ async function b(){
   
  */
 
-  function isValidUrl(string) {
+ 
+ // console.log(new Date().toISOString().split('.')[0]); // 9/17/2016
+ // console.log( isValidUrl('ww/fdegrtgrfdg//,com') )
+
+
+async function testing(){
+
+  let tbv = false, sv = false
+
+
+  function done(){
+    console.log(tbv, " ", sv)
+    if(sv && tbv){
+      console.log("all done")
+    }
+  }
+
+
+  thunderbirdvapes.execute().then( ()=>{
+    tbv = true
+    done()
+  })
+
+
+  surreyvapes.execute().then( ()=>{
+    sv = true
+    done()
+  })
+  // ezvape.execute()
+  //inventory.addInventoriesToDB()
+
+
+}
+
+testing()
+
+
+/*
+
+ function isValidUrl(string) {
     try {
       new URL(string);
       return true;
@@ -71,32 +105,6 @@ async function b(){
       return false;
     }
   }
-
-
-
-async function wooCommerceTest(){
-  
-//
- // console.log( isValidUrl('ww/fdegrtgrfdg//,com') )
-
-  //thunderbirdvapes.execute()
-  //surreyvapes.execute()
-   ezvape.execute()
-}
-
-wooCommerceTest()
-
-
-
-
-
-//f1()
-//f2()
-
-
-
-
-/*
 
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');

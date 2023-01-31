@@ -146,11 +146,9 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
 
     let pc_c = 0, Pc_c = 0, pC_c = 0, PC_c = 0, p_c = 0
 
-    const normalized_products = []
+    const merged_products = []
 
     Object.keys(products_by_id).forEach( (key)=>{
-
-       // console.log(key)
 
         const product = products_by_id[key]
 
@@ -160,7 +158,7 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
         if('category' in product  && 'brand' in product) PC_c++
         if(product.price.length === 0 ) p_c++
 
-        normalized_products.push( {id: key, ...product} )
+        merged_products.push( {id: key, ...product} )
     })
 
     logger.info("products count: "+ Object.keys(products_by_id).length )
@@ -170,7 +168,7 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
     logger.info("products with category and with brand: "+ PC_c,)
     logger.info("products without price: "+ p_c,)
 
-    return normalized_products
+    return merged_products
 }
 
 async function getProductIdsByBrand(brand_links){
@@ -253,11 +251,11 @@ async function execute(){
 
         
 
-    const normalized_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
+    const merged_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
 
-    //console.log(normalized_products)
     
-    utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, normalized_products, logger)
+    
+    utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, merged_products, logger)
     }
     catch(err){
         logger.error(err)
