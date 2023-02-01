@@ -5,3 +5,5 @@ logs/
 package-lock.json
 
 test.bat
+vape-finder/public/demo.webp
+vape-finder/src/components/card/demo.webp
