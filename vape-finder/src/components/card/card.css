@@ -1,0 +1,34 @@
+.card {
+    background-color: white;
+    border-radius: 10px;
+    margin-bottom: 1em;
+  }
+
+  @media only screen and (max-width: 481px) {
+    
+      .card {
+        min-width: 200px;
+        min-height: 200px;
+      }
+  }
+  @media only screen and (min-width: 481px) and (max-width: 768px) { 
+    
+      .card {
+        min-width: 190px;
+        min-height: 200px;
+      }
+  }
+  @media only screen and (min-width: 769px) and (max-width: 1025px) {
+   
+      .card {
+        min-width: 180px;
+        min-height: 200px;
+      }
+  }
+  @media only screen and (min-width: 1026px) {
+   
+      .card {
+        min-width: 170px;
+        min-height: 200px;
+      }
+  }
