@@ -6,12 +6,14 @@ import Body from './components/body/Body'
 import './app.css'
 
 function App() {
-  return ( 
+  return (
+    <div className="page"> 
       <div className="app">
         <Header/>
         <Body/>
         <Footer/>
-      </div> 
+      </div>
+    </div>
   );
 }
 

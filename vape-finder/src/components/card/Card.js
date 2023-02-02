@@ -16,9 +16,9 @@ function Card( {product} ) {
       <span className="title">{name}<br/></span>   
       <span>${price}<br/></span>
 
-      <img class="product_img"
+      <img className="product_img"
         src={img}
-        alt="Grapefruit slice atop a pile of other slices">
+        alt="Product">
       </img>
 
       <div className="card_footer">
