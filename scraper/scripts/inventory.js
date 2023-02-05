@@ -11,14 +11,17 @@ function normalizeProducts(json, source){
 
     return json.map( (product) => {
         return {
-            source:     source,
-            source_id:  product.id,                 //TODO: can i hash a product id into a mongodb id?
-            source_url: `https://${source}.com`,    //TODO: each product needs a direct link to source product page
-            name:       product.name,               //TODO: 
-            img_src:    product.img,                //TODO: need a process that fetches product images and saves them locally
-            price:      product.price,              //TODO: remove the $ from some prices
-            brand:      product.brand,              //TODO: for brandless products, most name fields contain the brand as the first letter
-            category:   product.category            //TODO: split category strings from different vendors into discrete Tags for searching/filtering
+            source:         source,
+            source_id:      product.id,                 //TODO: can i hash a product id into a mongodb id?
+            source_url:     `https://${source}.com`,    //TODO: each product needs a direct link to source product page
+            last_updated:   '02/04/2023',
+            product_info:{
+                name:           product.name,               //TODO: 
+                img_src:        product.img,                //TODO: need a process that fetches product images and saves them locally
+                price:          product.price,              //TODO: remove the $ from some prices
+                brand:          product.brand,              //TODO: for brandless products, most name fields contain the brand as the first letter
+                category:       product.category            //TODO: split category strings from different vendors into discrete Tags for searching/filtering
+            }
         }
     })
 }
