@@ -5,6 +5,24 @@ import Card from '../card/Card'
 // card/components/src/ (image name)
 const img_src = '../../../demo.webp';
 
+function CardList( { products } ) {
+
+  console.log(products)
+
+  return (
+    <div className="card_container">  
+        {products.map( (product, idx)=> 
+          <Card key={idx} product={product}/>)}     
+    </div>
+  );
+}
+
+export default CardList;
+
+/*
+
+
+
 const products = [
   {
     "last_updated":"01/02/2023",
@@ -78,14 +96,4 @@ const products = [
     "price": "15.99"
   },
 ]
-
-function CardList() {
-  return (
-    <div className="card_container">  
-        {products.map( (product, idx)=> 
-          <Card key={idx} product={product}/>)}     
-    </div>
-  );
-}
-
-export default CardList;
+*/
