@@ -22,8 +22,8 @@ var schema = buildSchema(`
 
   type ProductInfo {
     name:         String!                 
-    img_src:      String!               
-    price:        Float              
+    img_src:      String               
+    price:        String              
     brand:        String             
     category:     String   
   }
@@ -75,40 +75,8 @@ app.listen(4000, () => {
 
 
 /*
-
-
-var query = `query getProducts {
-    id, source_id, 
-    info{
-      brand, category
-    }
-  }                       
-}`;
-
-fetch('http://localhost:4000/graphql', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  body: JSON.stringify({
-    query,
-    }
-  })
-})
-  .then(r => r.json())
-  .then(data => console.log('data returned:', data));
-
-
-
-
-
-
-
-
-
-
-  var query = `query GetProducts {
+//working client query
+var query = `query GetProducts {
     getProducts{
         id, source_id, 
     info{

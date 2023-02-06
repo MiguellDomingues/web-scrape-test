@@ -19,7 +19,7 @@ return (
         <div className="search_bar_shops_about">
            <span className="shops">Shops</span> 
            
-           <span classname="about">About</span> 
+           <span className="about">About</span> 
         </div>
 
         
