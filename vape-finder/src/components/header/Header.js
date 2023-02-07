@@ -1,7 +1,7 @@
 import './header.css'
 import SearchBar from '../searchBar/SearchBar.js'
 
-function Header() {
+function Header( {selected} ) {
     return ( 
     <><div className="container_header">
 
@@ -13,7 +13,7 @@ function Header() {
      <div><hr/></div>
       
       <div className="container_search_bar">
-        <SearchBar/>
+        <SearchBar handleTagSelected={selected}/>
       </div>
 
     </div></>);

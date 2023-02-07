@@ -29,7 +29,7 @@ var schema = buildSchema(`
   }
 
   type Query {
-    getProducts: [Product!]
+    getProducts(tags: [String!]): [Product!]
   }
 `);
 
@@ -58,7 +58,14 @@ class ProductInfo {
 }
 
 var root = {
-    getProducts: async () => (await fetchProducts()).map( product => new Product(product)),
+    getProducts: async ( { tags} ) => {
+      console.log(tags)
+
+      const a = tags.length > 0 ? 3 : 4
+      console.log(a)
+
+      return (await fetchProducts()).map( product => new Product(product))
+    },
 };
 
 
