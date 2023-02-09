@@ -12,52 +12,80 @@ const LOG_FILE_NAME             = 'thunderbirdvapes'
 
 const logger = utils.getLogger(LOG_FILE_NAME)
 
-function parseProduct(product){
+function clean(raw_products){
+
+    let includes = [
+        'E-Liquid',
+        'Hardware',
+        'Wicks & Wire', 
+        'Replacement Glass', 
+        'Pods',
+        'Open System',
+        'Closed System',
+        'Coils',
+        'Chargers', 
+        'Batteries',]
+
+        return raw_products
+        .map( (p)=>{
+            p.product_type = p.product_type.split(" - ").join(",")
+            return p
+        })
+        .filter(                                                                              
+            (p)=> includes.filter( (tag) => p.product_type.includes(tag) ).length > 0 )
+        .map( (p)=>{
+            return {
+                id:             p.id,  
+                name:           p.title,
+                src:            `${DOMAIN}/products/${p.handle}`,    
+                brand:          p.vendor,
+                category:       p.product_type,
+                img:            p.images && p.images.length > 0 ? p.images[0].src : null,
+                price:          p.variants && p.variants.length > 0 ? p.variants[0].price : null
+            }
+        })
+
     //TODO: the 'tag' array has lots of descriptive tags that would simplify categorizing/branding products from shopify-based stores
-    return {
-        id:             product.id,  
-        name:           product.title,
-        //handle:         product.handle,      
-        brand:          product.vendor,
-        category:       product.product_type,
-        img:            product.images && product.images.length > 0 ? product.images[0].src : null,
-        price:          product.variants && product.variants.length > 0 ? product.variants[0].price : null
-    }
 }
 
-module.exports = (async = () => {
-    return new Promise( (resolve) => {
+module.exports = ( () => {
+    return new Promise( async (resolve) => {
         logger.info("**************************executing " +DOMAIN+ " process***********************************************")
 
         const time_start = Date.now()
 
-        const start_page = 1
-        const end_page = 6
+        try{
+            const start_page = 1
+            const end_page = 6
 
-        const subpath = 'products.json'
-        const page_param = (page)=>`page=${page}`
-        const limit_param = 'limit=250'
+            const subpath = 'products.json'
+            const page_param = (page)=>`page=${page}`
+            const limit_param = 'limit=250'
 
-        const urls = []
+            const urls = []
 
-        //generate urls
-        for(let page = start_page; page <= end_page; page++)
-            urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
+            //generate urls
+            for(let page = start_page; page <= end_page; page++)
+                urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
         
-        //visit urls, process each url with scraper function, return array of products
-        utils.scrapePages(urls, json=>json["products"],logger)
-        .then( 
-            (products) => {
-                products = products.flat()
-                utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
-                utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, products.map( product=>parseProduct(product)), logger)
-        })
-        .catch( (err) => logger.error(err))
-        .finally( ()=>{
+            //visit urls, process each url with scraper function, return array of array of products
+            //const products = (await utils.scrapePages(urls, json=>json["products"],logger)).flat()
+           
+            //utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+            const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+
+           //console.log(clean(products))
+
+
+            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(products) , logger)
+
+        }catch(err){
+            logger.error(err)
+        }finally{
             const time_finish = Date.now()
             logger.info("processed " +DOMAIN+ " execution in " + (time_finish - time_start)/1000 + " seconds")
             resolve() 
-        })
+        }
     })
 })()
 

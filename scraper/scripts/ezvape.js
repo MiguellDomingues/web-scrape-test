@@ -62,11 +62,13 @@ function scrapeProductsBrandsCategories(html){
     
             const id =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-buttons-variations .cart-button a").attr("data-product_id") ;
             const img = $(el).find(".product-wrapper .product-image a img").attr('src') ;
+            const src = $(el).find(".product-wrapper a").attr('href') ;
             const title = $(el).find(".product-wrapper .product-info .product-title-rating a").text()
             const price =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-price .price .amount bdi").first().text()
     
             products_by_id.push({
                 id: id,
+                src: src,
                 title: title,
                 img: img,
                 price: price
@@ -130,7 +132,7 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
 
     const products_by_id = {}
 
-    products.forEach( product=> products_by_id[product.id] = { name: product.title, img: product.img, price: product.price })
+    products.forEach( product=> products_by_id[product.id] = { name: product.title, img: product.img, price: product.price, src: product.src })
 
     Object.keys(brand_product_ids).forEach( key => 
         brand_product_ids[key].forEach( id =>
@@ -211,18 +213,52 @@ async function getProductsAndBrandCategoryLinks(){
     return json[0]
 }
 
+function clean(raw_products){
+
+    let includes = [
+        'eJuice',
+        'Vape Kits',
+        'Tanks & Rebuildables',
+        'Pods & Coils',
+        'E-Juice',
+        'Box Mods',
+        'Accessories',]
+
+    return raw_products
+    .filter( 
+        p => p.price && p.price.trim() != "")     /// remove products which have no price
+    .map( 
+        p => {p.price = p.price.replace("$", "") ///  remove '$' from price string
+        return p})
+    .filter(                                                                             
+        (p) => 'category' in p )                // remove products which have no category
+    .map( product => {
+           product.category = product.category.split("/")   //remove tailing '/'
+           product.category.pop()
+           product.category = product.category.join(",")
+        return product})
+    .filter(                                                                              
+        (p)=> includes.filter( (tag) => p.category.includes(tag) ).length > 0 ) // remove products that are not part of specific categories
+}
+
 module.exports = ( () => {
     return new Promise( async (resolve) => {
         const time_start = Date.now()
         logger.info("**************************executing " +DOMAIN+ " process***********************************************")
 
         try{
+            
             ///////////////////stage 1////////////////////////////////// scrape the product id/img/price/name without category/brands; scrape the category/brand links
+
+              /*
             const json = await getProductsAndBrandCategoryLinks()
 
             const {products, brands, categories } = json
-        
+
+            console.log(products)
+
             utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+           
             utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
             utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
 
@@ -241,9 +277,15 @@ module.exports = ( () => {
             utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids.json', product_ids_by_brand, logger)
 
             ////////////////////////////////////// stage 3//////////////////////////////////////////////// merge the products with brand/category by id
+*/
+           const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+            const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
+            const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
 
             const merged_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
-            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, merged_products, logger)
+
+
+            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(merged_products), logger)
         }
         catch(err){
             logger.error(err)
