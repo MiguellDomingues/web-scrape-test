@@ -7,6 +7,51 @@ const LOG_FILE_NAME  = 'inventory'
 
 const logger = utils.getLogger(LOG_FILE_NAME)
 
+const buckets = [
+    {
+        name: 'Juices',
+        synonyms: ['e-juice', //surreyvapes
+                   'ejuice',  //ezvape
+                   'e-liquid'] //tbvapes
+    },
+    {
+        name: 'Coils',
+        synonyms: ['coil','rda','atomizer']
+    },
+    {
+        name: 'Pods',
+        synonyms: ['pod',]
+    },
+    {
+        name: 'Tanks',
+        synonyms: ['tank','clearomizer']
+    },
+    {
+        name: 'Starter Kits',
+        synonyms: ['starter', 'kit','disposable']
+    },
+    {
+        name: 'Mods',
+        synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box']
+    },
+    {
+        name: 'Batteries',
+        synonyms: ['battery', 'batteries',]
+    },
+    {
+        name: 'Chargers',
+        synonyms: ['charger','charging']
+    },
+    {
+        name: 'Replacement Glass',
+        synonyms: ['glass','replacement','pyrex','replacement glass']
+    },
+    {
+        name: 'Accessories/Miscellaneous',
+        synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter','screwdriver','tweezer','decorative ring','magnet connector','vaper twizer']
+    },      
+]
+
 let vape_flavours = [
     'Arctic Jungle',
     'Black Cherry',
@@ -67,54 +112,10 @@ module.exports = ( () => {
 
     const normalized_products = []
 
-    const buckets = [
-        {
-            name: 'Juices',
-            synonyms: ['e-juice', //surreyvapes
-                       'ejuice',  //ezvape
-                       'e-liquid'] //tbvapes
-        },
-        {
-            name: 'Coils',
-            synonyms: ['coil',]
-        },
-        {
-            name: 'Pods',
-            synonyms: ['pod',]
-        },
-        {
-            name: 'Tanks',
-            synonyms: ['tank', 'atomizer','clearomizer']
-        },
-        {
-            name: 'Starter Kits',
-            synonyms: ['starter', 'kit','disposable']
-        },
-        {
-            name: 'Mods',
-            synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box']
-        },
-        {
-            name: 'Batteries',
-            synonyms: ['battery', 'batteries',]
-        },
-        {
-            name: 'Chargers',
-            synonyms: ['charger','charging']
-        },
-        {
-            name: 'Replacement Glass',
-            synonyms: ['glass',]
-        },
-        {
-            name: 'Accessories/Miscellaneous',
-            synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter']
-        },
-
-        
-    ]
+    
 
     const m = new Map()
+
     inventories_dir.forEach( (file)=>{
         //normalized_products.push(normalizeProducts(utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger), getFileName(file)))
         //normalized_products.push(utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger))
@@ -122,92 +123,81 @@ module.exports = ( () => {
         const products = utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger)
        // const m = new Map()
 
-    
-        function match_bucket_synonym(category_str, name_str){
+        function putMap(k,v){
+            const arr = m.has(k) ? m.get(k) : []
+            arr.push(v)
+            m.set(k, arr)
+        }
 
-            const bucket_points = {}
+        //return the matching bucket names, if any, for a product
+        function getProductBuckets(category_str, name_str){
 
-            const countMatches = (trgt, src) => {
-                const result = trgt.match(new RegExp(src, 'g'))
-                return result ? result.length : 0
-            }
-            
-            for(idx in buckets){
-                bucket_points[buckets[idx].name] = { points: 0}
+            /*
+            calculate the bucket points for each bucket by scanning the product category/name strs for keywords
+            return an object of the form { "bucketname1":{points: int}, "bucketname2":{points: int}, ... }
+            */
+            const bucket_points = ( (category_str, name_str) =>{
 
-                for(_idx in buckets[idx].synonyms){
-                    bucket_points[buckets[idx].name].points = 
-                        bucket_points[buckets[idx].name].points + countMatches(category_str, buckets[idx].synonyms[_idx])
-                    bucket_points[buckets[idx].name].points = 
-                        bucket_points[buckets[idx].name].points + countMatches(name_str, buckets[idx].synonyms[_idx])      
-                }     
-            }
+                //count the occurances of src string inside the trgt string string
+                const countMatches = (trgt, src) => {
+                    const result = trgt.match(new RegExp(src, 'g'))
+                    return result ? result.length : 0
+                }
 
-            const a = {}
+                const bucket_points = {}
 
-            let max = 0
-            let max_bucket = undefined
-//TODO: DEAL WITH TIE POINTS; PUT TIES IN ALL MATCHING BUCKETS
-             Object.keys(bucket_points).forEach( (k)=>{
-              if(bucket_points[k].points > max){
-                  a[k] = bucket_points[k].points
-                  max = bucket_points[k].points
-                  max_bucket = k
-             }})
+                buckets.forEach( (bucket)=>{
+                    bucket_points[bucket.name] = { points: 0}
+                    bucket.synonyms.forEach( (synonym)=>{
+                        let points = bucket_points[bucket.name].points
+                        points = points + countMatches(category_str, synonym) + countMatches(name_str, synonym)
+                        bucket_points[bucket.name].points = points
+                    })
+                })
 
-             //console.log(max_bucket)
+                return bucket_points
+            })(category_str, name_str)
 
-            return max_bucket
+            /*
+            return 0-n max score bucket name(s)
+            if multiple buckets were tied for max score, return those bucket names
+            if all the scores were 0, returns an empty list     
+            */
+            const max_points_buckets = ( (bp)=>{
+                const non_zero_points = Object.keys(bp).filter( k => bp[k].points > 0)                                                
+                const sorted_by_max_points = non_zero_points.sort( (lhs, rhs)=> bp[rhs].points - bp[lhs].points)
+                const max_points_bucket = sorted_by_max_points.shift()
+                return max_points_bucket ? [max_points_bucket, ...sorted_by_max_points.filter( k => bp[k].points === bp[max_points_bucket].points )] : []
+            })(bucket_points)
+
+            return max_points_buckets
         }
 
         console.log("/////////////////////////////", getFileName(file), "///////////////////////////////////////")
 
         products.forEach( (p)=>{
 
-            let str = p.category.toLowerCase()
-            let str1 = p.name.toLowerCase()
+            let matches = getProductBuckets(p.category.toLowerCase(), p.name.toLowerCase())
 
-
-
-            let match = match_bucket_synonym(str, str1)
-
-           // console.log(str)
-           // console.log(str1)
-           // console.log(match)
-           
-
-            /*
-            if(!match){
-               // console.log('match the name instead: ', p.name.toLowerCase())
-                match = match_bucket_synonym(p.name.toLowerCase())
-               // console.log("match name result: ", match)
-            }
-            */
-
-            
-            if(match){
-                let arr = []
-                if(m.has(match)){
-                    arr = m.get(match)
-                    arr.push(p.name)
-                    m.set(match, arr)
-                }else{
-                    arr.push(p.name)
-                    m.set(match, arr)
-                }
-            }else{
+            if(matches.length === 0){        
                 console.log(p.category, " ", p.name, "has no bucket")
-            }   
-            
-            
-            
+            }else if(matches.length > 1){
+                console.log("multiple matches:", matches, p.category, " | ", p.name) //if there was a tie among buckets, add the same product to multiple buckets
+                putMap(matches[0],p)
+            }else{
+                putMap(matches[0],p)
+            } 
         })
         
         //console.log(m)
         
     })
 
-    console.log(m)
+    for (const key of m.keys()) {
+        console.log( key, " : ", m.get(key));
+    }
+
+    //console.log(m)
 
     /*
     createProducts(normalized_products.flat()).then((db_result)=>{
@@ -222,24 +212,20 @@ module.exports = ( () => {
 
 /*
 
- const products = utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger)
-        const m = new Map()
-
-        
-        function match_bucket_synonym(str){
-
+ /*
+            
             for(idx in buckets){
-                //console.log(buckets[idx])
+                bucket_points[buckets[idx].name] = { points: 0}
+
                 for(_idx in buckets[idx].synonyms){
-                    //console.log(buckets[idx].synonyms[_idx])
-                    if(str.includes(buckets[idx].synonyms[_idx])){
-                        return buckets[idx].name                
-                    }
+                    bucket_points[buckets[idx].name].points = 
+                        bucket_points[buckets[idx].name].points + countMatches(category_str, buckets[idx].synonyms[_idx])
+                    bucket_points[buckets[idx].name].points = 
+                        bucket_points[buckets[idx].name].points + countMatches(name_str, buckets[idx].synonyms[_idx])      
                 }     
             }
 
-            return ""
-        }
+            
 
         
 
