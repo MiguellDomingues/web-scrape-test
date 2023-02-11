@@ -76,23 +76,23 @@ let vape_flavours = [
     'Mango',
     'Menthol','Peach','Raspberry','Strawberry','Strawberry Coconut Pineapple','Watermelon','Peach']
 
-function normalizeProducts(json, source){
+function normalize(product, categories, source){
 
-    return json.map( (product) => {
         return {
             source:         source,
             source_id:      product.id,                 //TODO: can i hash a product id into a mongodb id?
             source_url:     `https://${source}.com`,    //TODO: each product needs a direct link to source product page
             last_updated:   '02/04/2023',
+            categories:     [...categories],
             product_info:{
-                name:           product.name,               //TODO: 
-                img_src:        product.img,                //TODO: need a process that fetches product images and saves them locally
-                price:          product.price,              //TODO: remove the $ from some prices
-                brand:          product.brand,              //TODO: for brandless products, most name fields contain the brand as the first letter
-                category:       product.category            //TODO: split category strings from different vendors into discrete Tags for searching/filtering
+                name:               product.name,      
+                info_url:           product.src,         
+                img_src:            product.img,                //TODO: need a process that fetches product images and saves them locally
+                price:              product.price,              
+                brand:              product.brand,              
+                category_str:       product.category           
             }
-        }
-    })
+        }  
 }
 
 
@@ -114,20 +114,16 @@ module.exports = ( () => {
 
     
 
-    const m = new Map()
+    const merged_maps = utils.getMap(logger)
+    let total_products = 0
 
     inventories_dir.forEach( (file)=>{
         //normalized_products.push(normalizeProducts(utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger), getFileName(file)))
         //normalized_products.push(utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger))
 
         const products = utils.readJSON(utils.INVENTORIES_DIR, getFileName(file), logger)
-       // const m = new Map()
-
-        function putMap(k,v){
-            const arr = m.has(k) ? m.get(k) : []
-            arr.push(v)
-            m.set(k, arr)
-        }
+        total_products+=products.length
+       
 
         //return the matching bucket names, if any, for a product
         function getProductBuckets(category_str, name_str){
@@ -173,40 +169,48 @@ module.exports = ( () => {
             return max_points_buckets
         }
 
-        console.log("/////////////////////////////", getFileName(file), "///////////////////////////////////////")
+        logger.info("/////////////////////////////"+ getFileName(file)+ "///////////////////////////////////////")
+
+        const map = utils.getMap(logger)
+        let tie_matches_count = 0
 
         products.forEach( (p)=>{
 
             let matches = getProductBuckets(p.category.toLowerCase(), p.name.toLowerCase())
 
             if(matches.length === 0){        
-                console.log(p.category, " ", p.name, "has no bucket")
+                logger.info(p.category+ " "+ p.name+ "has no bucket")
             }else if(matches.length > 1){
-                console.log("multiple matches:", matches, p.category, " | ", p.name) //if there was a tie among buckets, add the same product to multiple buckets
-                putMap(matches[0],p)
+                logger.info("multiple matches: ("+ matches + ") " + p.category+ " | "+ p.name) //if there was a tie among buckets, add the same product to multiple buckets
+                map.put(matches[0],p)
+                merged_maps.put(matches[0],p)
+                tie_matches_count++
             }else{
-                putMap(matches[0],p)
+                map.put(matches[0],p)
+                merged_maps.put(matches[0],p)
             } 
+
+            normalized_products.push(normalize(p, [matches[0]], getFileName(file)))
         })
-        
-        //console.log(m)
-        
+        logger.info("/////////////////////////////BUCKETS///////////////////////////////////////")
+        map.print()
+       
     })
 
-    for (const key of m.keys()) {
-        console.log( key, " : ", m.get(key));
-    }
+    logger.info("/////////////////////////////BUCKETS FOR ALL PRODUCTS///////////////////////////////////////")
 
-    //console.log(m)
+    merged_maps.print()
 
-    /*
-    createProducts(normalized_products.flat()).then((db_result)=>{
+    //console.log(normalized_products)
+    //console.log(normalized_products.length)
+    
+    createProducts(normalized_products).then((db_result)=>{
         logger.info("INSERTED " + db_result.length + " RECORDS")
     }).catch((err)=>{
         logger.error("err from database")
         logger.error(err)
     })  
-    */ 
+    
 
 })()
 
