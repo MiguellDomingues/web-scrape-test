@@ -1,17 +1,32 @@
 const mongoose = require('mongoose');
 
+const BUCKETS = [
+    'Juices',
+    'Coils',
+    'Pods',
+    'Tanks',
+    'Starter Kits',
+    'Mods',
+    'Batteries',
+    'Chargers',
+    'Replacement Glass',
+    'Accessories/Miscellaneous',
+ ] 
+
 const productSchema = new mongoose.Schema({
-    source:         String,
-    source_id:      String,
-    source_url:     String,
-    last_updated:   String,
-    
+    source:         { type: String, required: true },
+    source_id:      { type: String, required: true },
+    source_url:     { type: String, required: true },
+    last_updated:   { type: String, required: true },
+    categories:     { type: [String], enum: Object.values(BUCKETS) },
+
     product_info:{
-        name:           String,
-        img_src:        String,
-        price:          String,
-        brand:          String,
-        category:       String   
+        name:               { type: String, required: true },
+        img_src:            String,
+        info_url:           { type: String, required: true },
+        price:              { type: Number, required: true },
+        brand:              String,
+        category_str:           { type: String, required: true },   
     } 
 });
 
