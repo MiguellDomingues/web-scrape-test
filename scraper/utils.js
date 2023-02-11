@@ -71,6 +71,40 @@ function getLogger(log_file_name){
     })()
 }
 
+// like a class...
+function getMap(_logger){
+    
+    //like an instance of the class
+    return (function (_logger){
+        // the public variables
+        const m = new Map()
+        const logger = _logger
+
+        return {
+            put: function (k,v) {
+                const arr = m.has(k) ? m.get(k) : []
+                arr.push(v)
+                m.set(k, arr) },
+            print: function (){ 
+                let sorted = []
+                m.forEach( (v,k) => sorted.push(k) );
+                sorted.sort().forEach( k => logger.info( k + " : " + m.get(k).length))},
+            merge: function (src){
+                for (const k of src.keys()) {
+                    if(m.has(k)){
+                        //
+                        m.get(k).push(...src.get(k))
+                        //m.set(k, arr)
+                    }else{
+                        m.set(k, [...src.get(k)] )
+                    }
+                }
+            },
+            getMap: m
+        }
+    })(_logger)
+}
+
 //TODO: the scraper function should return a object of just key->arr's, instead of an arr OR an object of key->arrs
 async function scrapePages(urls, scraper, logger){
     return new Promise( async (resolve, reject) => {
@@ -110,4 +144,4 @@ async function scrapePages(urls, scraper, logger){
     })
 }
 
-module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, ROOT_DATA_DIR, INVENTORIES_DIR }
+module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, getMap, ROOT_DATA_DIR, INVENTORIES_DIR }
