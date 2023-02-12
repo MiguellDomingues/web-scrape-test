@@ -1,67 +1,198 @@
 const cheerio = require("cheerio");
-const utils = require("../utils.js")
 
-const DOMAIN                    = 'https://ezvape.com'
+module.exports = (config) => {
 
-const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/ezvape`
-const BRANDS_SUBDIR             = `${DATA_DIR}/brands`
-const CATEGORIES_SUBDIR         = `${DATA_DIR}/categories`
+    const {
+        domain, 
+        data_dir,
+        log_file, 
+        utils, 
+        write_inventory,
+        fetch_brand_ids,
+        fetch_category_ids,
+        fetch_products,
+    } = config
 
-utils.createDirs([DATA_DIR, BRANDS_SUBDIR, CATEGORIES_SUBDIR])
+ 
+    const log = utils.getLogger(log_file)
 
-const RAW_PRODUCTS_FILE_NAME     = 'products'
-const BRAND_LINKS_FILE_NAME     = 'brand_links'
-const CATEGORY_LINKS_FILE_NAME  = 'category_links'
-const LOG_FILE_NAME             = 'ezvape'
-const INVENTORY_FILE_NAME       = 'ezvape'
+    const _data_dir = `${utils.ROOT_DATA_DIR}/${data_dir}`
+    const brands_subdir             = `${_data_dir}/${fetch_brand_ids.brands_subdir}`
+    const categories_subdir         = `${_data_dir}/${fetch_category_ids.categories_subdir}`
 
-const logger = utils.getLogger(LOG_FILE_NAME)
+    utils.createDirs([_data_dir,brands_subdir,categories_subdir])
 
-const buckets = [
-    {
-        name: 'Juices',
-        synonyms: ['e-juice', //surreyvapes
-                   'ejuice',  //ezvape
-                   'e-liquid'] //tbvapes
-    },
-    {
-        name: 'Coils',
-        synonyms: ['coil','rda','atomizer','RPM 40 Pod','Ego 1 Coil 1.0 Ohm 5/Pk','Metal RDA Stand','Crown 5 Coil']
-    },
-    {
-        name: 'Pods',
-        synonyms: ['pod',]
-    },
-    {
-        name: 'Tanks',
-        synonyms: ['tank','clearomizer']
-    },
-    {
-        name: 'Starter Kits',
-        synonyms: ['starter', 'kit','disposable','disposables']
-    },
-    {
-        name: 'Mods',
-        synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box']
-    },
-    {
-        name: 'Batteries',
-        synonyms: ['battery', 'batteries','18650']
-    },
-    {
-        name: 'Chargers',
-        synonyms: ['charger','charging','lush q4 charger','evod usb charger','Intellicharger I4 V2 Li-Ion/Nimh','Battery Charger','Wall Adapter','Power Bank']
-    },
-    {
-        name: 'Replacement Glass',
-        synonyms: ['glass','replacement','pyrex','replacement glass']
-    },
-    {
-        name: 'Accessories/Miscellaneous',
-        synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter',
-        'screwdriver','tweezer','decorative ring','magnet connector','vaper twizer','diy tool kit','Clapton Coil Building Kit','Zipper Storage Bag','Mouthpiece Glass']
-    },      
-]
+    return new Promise( async (resolve) => {
+        const time_start = Date.now()
+        log.info("**************************executing " +domain+ " process***********************************************")
+
+        try{
+            
+            ///////////////////stage 1////////////////////////////////// scrape the product id/img/price/name without category/brands; scrape the category/brand links
+            const { products, brands, categories } = await (async function(){
+                if(fetch_products.exec_scrape){
+
+                    const {products, brands, categories } = await scrapeProductsAndBrandCategoryLinks(domain, utils, log)  
+                    utils.writeJSON(_data_dir, fetch_products.raw_products_file, products, log)  
+                    utils.writeJSON(brands_subdir, fetch_brand_ids.brand_links_file, brands, log)
+                    utils.writeJSON(categories_subdir, fetch_category_ids.category_links_file, categories, log)
+                    return {products, brands, categories }
+                }
+
+               const products = utils.readJSON(_data_dir, fetch_products.raw_products_file, log)
+                const brands = utils.readJSON(brands_subdir, fetch_brand_ids.brand_links_file, log)
+                const categories = utils.readJSON(categories_subdir, fetch_category_ids.category_links_file, log)
+                return { products, 
+                    brands, 
+                    categories }
+            })()
+            
+              
+            const product_ids_by_category = await (async function(){
+
+                if(fetch_category_ids.exec_scrape){
+                    const product_ids_by_category = await getProductIdsByCategory(categories, domain, utils, log)    
+                    utils.writeJSON(categories_subdir, fetch_category_ids.c_product_ids_file, product_ids_by_category, log)
+                    return product_ids_by_category     
+                }else{
+                    return utils.readJSON(categories_subdir, fetch_category_ids.c_product_ids_file, log)
+                }          
+            })()
+
+            const product_ids_by_brand = await (async function(){
+
+                if(fetch_brand_ids.exec_scrape){
+                    const product_ids_by_brand = await getProductIdsByBrand(brands, domain, utils, log) 
+                    utils.writeJSON(brands_subdir, fetch_brand_ids.b_product_ids_file, product_ids_by_brand, log)
+                    return product_ids_by_brand     
+                }else{
+                    return utils.readJSON(brands_subdir, fetch_brand_ids.b_product_ids_file, log)
+                }          
+            })()
+
+            ////////////////////////////////////// stage 3//////////////////////////////////////////////// merge the products with brand/category by id
+            const categorized_branded_products = categorizeBrandProducts(products, product_ids_by_brand, product_ids_by_category, log)
+            const cleaned_products             = clean(categorized_branded_products, write_inventory.buckets, utils, log)
+
+            write_inventory.exec_inventory && utils.writeJSON(utils.INVENTORIES_DIR, write_inventory.inventory_file, cleaned_products, log)
+        }
+        catch(err){
+            console.log(err)
+            log.error(err)
+        }
+        finally{
+            const time_finish = Date.now()
+            log.info("processed " +domain+ " execution in " +  (time_finish - time_start)/1000 + " seconds")    
+            resolve()  
+        }
+    })
+}
+
+
+async function scrapeProductsAndBrandCategoryLinks(domain, utils, logger){
+
+     function scrapeProductsBrandsCategories(html){
+
+                function scrapeBrands(html){
+            
+                    const $ = cheerio.load(html);
+                
+                    const brands = []
+                
+                    $("#kapee-product-brand-2 .kapee_product_brands").children().each( (idx,el) => {
+                
+                    if(idx !== 0){
+                            brands.push({
+                                brand: $(el).find("a").text(),
+                                link: $(el).find("a").attr("href").split("/")[4]
+                            })                 
+                        }      
+                    })
+                
+                    return brands
+                }
+                
+                function scrapeProductInfo(html){
+                
+                    const $ = cheerio.load(html);
+                
+                    const products_by_id = []
+                
+                    $("#primary .products").children().each( (idx,el) => {
+                
+                        const id =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-buttons-variations .cart-button a").attr("data-product_id") ;
+                        const img = $(el).find(".product-wrapper .product-image a img").attr('src') ;
+                        const src = $(el).find(".product-wrapper a").attr('href') ;
+                        const title = $(el).find(".product-wrapper .product-info .product-title-rating a").text()
+                        const price =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-price .price .amount bdi").first().text()
+                
+                        products_by_id.push({
+                            id: id,
+                            src: src,
+                            title: title,
+                            img: img,
+                            price: price
+                        })
+                    })
+                
+                    return products_by_id
+                
+                }
+                
+                function scrapeCategories(html){
+                
+                    /*
+                    const $ = cheerio.load(html);
+                
+                    const categories = []
+                
+                    $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => {
+                
+                    categories.push({
+                                category: $(el).find("a").filter( (index) => index === 0 ).text(),
+                                link: $(el).find("a").attr("href").split("/")[4]
+                        })                          
+                    })
+                    */
+                
+                    //get the nested sub-categories within each category
+                    function scrapeSubcategories(category, link, slice_index, element){
+                    
+                        const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
+                        const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
+                        categories.push({category: appended_category,link: appended_link}) //TODO: remove the hanging "/" on the last appended string
+                    
+                        $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
+                    }
+                    
+                    const $ = cheerio.load(html);
+                    const categories = []
+                    
+                    $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
+                    
+                
+                    
+                
+                    return categories
+                }
+                
+            
+                const items = {}
+            
+                items.products = scrapeProductInfo(html)
+                items.brands = scrapeBrands(html)
+                items.categories = scrapeCategories(html)
+            
+                return items
+    }
+
+    const subpath = 'shop/'
+    const param = 'per_page=1000'
+    const urls = [`${domain}/${subpath}?${param}`]
+
+    const json = await utils.scrapePages(urls, scrapeProductsBrandsCategories, logger)
+    return json[0]
+}
 
 function scrapeProductIds(html){
 
@@ -77,104 +208,11 @@ function scrapeProductIds(html){
     return product_ids
 }
 
-function scrapeProductsBrandsCategories(html){
 
-    function scrapeBrands(html){
 
-        const $ = cheerio.load(html);
-    
-        const brands = []
-    
-        $("#kapee-product-brand-2 .kapee_product_brands").children().each( (idx,el) => {
-    
-           if(idx !== 0){
-                brands.push({
-                    brand: $(el).find("a").text(),
-                    link: $(el).find("a").attr("href").split("/")[4]
-                })                 
-            }      
-        })
-    
-        return brands
-    }
-    
-    function scrapeProductInfo(html){
-    
-        const $ = cheerio.load(html);
-    
-        const products_by_id = []
-    
-        $("#primary .products").children().each( (idx,el) => {
-    
-            const id =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-buttons-variations .cart-button a").attr("data-product_id") ;
-            const img = $(el).find(".product-wrapper .product-image a img").attr('src') ;
-            const src = $(el).find(".product-wrapper a").attr('href') ;
-            const title = $(el).find(".product-wrapper .product-info .product-title-rating a").text()
-            const price =  $(el).find(".product-wrapper .product-info .product-price-buttons .product-price .price .amount bdi").first().text()
-    
-            products_by_id.push({
-                id: id,
-                src: src,
-                title: title,
-                img: img,
-                price: price
-            })
-        })
-    
-        return products_by_id
-    
-    }
-    
-    function scrapeCategories(html){
-    
-        /*
-        const $ = cheerio.load(html);
-    
-        const categories = []
-    
-        $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => {
-    
-           categories.push({
-                    category: $(el).find("a").filter( (index) => index === 0 ).text(),
-                    link: $(el).find("a").attr("href").split("/")[4]
-            })                          
-        })
-        */
-    
-        //get the nested sub-categories within each category
-        function scrapeSubcategories(category, link, slice_index, element){
-        
-            const appended_category = category + $(element).find("a").filter( (index) => index === 0 ).text() + "/"
-            const appended_link = link + $(element).find(">a").attr("href").split("/").slice(slice_index).join("/") 
-            categories.push({category: appended_category,link: appended_link}) //TODO: remove the hanging "/" on the last appended string
-        
-            $(element).find("> .children").children().each( (idx, _el) => scrapeSubcategories(appended_category, appended_link, slice_index+1, _el))           
-          }
-        
-          const $ = cheerio.load(html);
-          const categories = []
-        
-          $("#woocommerce_product_categories-4 .product-categories").children().each( (idx,el) => scrapeSubcategories("", "/", 4, el))
-        
-    
-        
-    
-        return categories
-    }
-    
-
-    const items = {}
-
-    items.products = scrapeProductInfo(html)
-    items.brands = scrapeBrands(html)
-    items.categories = scrapeCategories(html)
-
-    return items
-}
-
-function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category_product_ids)
+function categorizeBrandProducts(products, brand_product_ids, category_product_ids, log)
 {
-    logger.info("**** adding brands and categories to products ****")
+    log.info("**** adding brands and categories to products ****")
 
     const products_by_id = {}
 
@@ -206,60 +244,49 @@ function mergeBrandsCategoriesWithProducts(products, brand_product_ids, category
         merged_products.push( {id: key, ...product} )
     })
 
-    logger.info("products count: "+ Object.keys(products_by_id).length )
-    logger.info("products without category and without brand: "+ pc_c,)
-    logger.info("products with category and without brand: "+ Pc_c,)
-    logger.info("products without category and with brand: "+ pC_c,)
-    logger.info("products with category and with brand: "+ PC_c,)
-    logger.info("products without price: "+ p_c,)
+    log.info("products count: "+ Object.keys(products_by_id).length )
+    log.info("products without category and without brand: "+ pc_c,)
+    log.info("products with category and without brand: "+ Pc_c,)
+    log.info("products without category and with brand: "+ pC_c,)
+    log.info("products with category and with brand: "+ PC_c,)
+    log.info("products without price: "+ p_c,)
 
     return merged_products
 }
 
-async function getProductIdsByBrand(brand_links){
+async function getProductIdsByBrand(brand_links,domain, utils, log){
 
     if(brand_links === undefined || brand_links.length === 0)
         throw new Error("brand_links can not be undefined or an empty arr")
 
     const subpath = 'brand'
     const param = `per_page=300`
-    const urls = brand_links.map( brands => `${DOMAIN}/${subpath}/${brands.link}?${param}`)
+    const urls = brand_links.map( brands => `${domain}/${subpath}/${brands.link}?${param}`)
 
     const product_ids_by_brand = {}
-    const product_ids = await utils.scrapePages(urls, scrapeProductIds, logger)
+    const product_ids = await utils.scrapePages(urls, scrapeProductIds, log)
     product_ids.forEach( (product_ids, idx) => product_ids_by_brand[brand_links[idx].brand] = product_ids)
 
     return product_ids_by_brand
 }
 
-async function getProductIdsByCategory(category_links){
+async function getProductIdsByCategory(category_links,domain, utils, log){
 
     if(category_links === undefined || category_links.length === 0)
         throw new Error("category_links can not be undefined or an empty arr")
 
     subpath = 'buy-vapes-online'
     param = `per_page=300`
-    urls = category_links.map( categories => `${DOMAIN}/${subpath}${categories.link}?${param}`)
+    urls = category_links.map( categories => `${domain}/${subpath}${categories.link}?${param}`)
 
     const product_ids_by_category = {}
-    const product_ids = await utils.scrapePages(urls, scrapeProductIds, logger)
+    const product_ids = await utils.scrapePages(urls, scrapeProductIds, log)
     product_ids.forEach( (product_ids, idx) => product_ids_by_category[category_links[idx].category] = product_ids)
 
     return product_ids_by_category
 }
 
-async function getProductsAndBrandCategoryLinks(){
-
-    const subpath = 'shop/'
-    const param = 'per_page=1000'
-    const urls = [`${DOMAIN}/${subpath}?${param}`]
-
-    let json = await utils.scrapePages(urls, scrapeProductsBrandsCategories, logger)
-
-    return json[0]
-}
-
-function clean(raw_products){
+function clean(raw_products, buckets, utils, log){
 
     let includes = [
         'eJuice',
@@ -270,7 +297,9 @@ function clean(raw_products){
         'Box Mods',
         'Accessories',]
 
-    return raw_products
+    log.info(`//////////cleaning raw products: count: ${raw_products.length}////////////////`)
+
+    raw_products = raw_products
     .filter( 
         p => p.price && p.price.trim() != "")     /// remove products which have no price
     .map( 
@@ -288,125 +317,19 @@ function clean(raw_products){
     .map( 
         (p)=>{              // add product to 0 or more buckets, based on tags/synomyns within each bucket. print no bucket or multibucket matches to log
             p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
-            p.buckets.length > 1 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
-            p.buckets.length === 0 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            p.buckets.length > 1 && log.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            p.buckets.length === 0 && log.error(`no buckets: ${p.buckets} , ${p.name}, ${p.category}`)
            // console.log(p.buckets , p.name, p.category)
     return p})
+
+    log.info(`//////////finished cleaning: count: ${raw_products.length} ////////////////`)
+
+    return raw_products
 }
 
-module.exports = ( () => {
-    return new Promise( async (resolve) => {
-        const time_start = Date.now()
-        logger.info("**************************executing " +DOMAIN+ " process***********************************************")
-
-        try{
-            
-            ///////////////////stage 1////////////////////////////////// scrape the product id/img/price/name without category/brands; scrape the category/brand links
-
-              
-            //const json = await getProductsAndBrandCategoryLinks()
-
-           // const {products, brands, categories } = json
-
-           // console.log(products)
-
-           // utils.writeJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME , products, logger)
-           
-           // utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
-          //  utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
-
-            ////////////////////stage 2.a////////////////////////////////// visit each category url; scrape the product ids
-
-          //  const product_ids_by_category = await getProductIdsByCategory(categories)
-          //  utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids', product_ids_by_category, logger)
-
-            // const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
-            //const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
-            //const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
-
-            ////////////////////stage 2.b////////////////////////////////// visit the each brand url; scrape the product ids
-
-           // const product_ids_by_brand = await getProductIdsByBrand(brands)
-          //  utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids', product_ids_by_brand, logger)
-
-            ////////////////////////////////////// stage 3//////////////////////////////////////////////// merge the products with brand/category by id
-
-           const products = utils.readJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME , logger)
-            const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
-            const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
-
-            const merged_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
-            //clean(merged_products)
-
-            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(merged_products), logger)
-        }
-        catch(err){
-            logger.error(err)
-        }
-        finally{
-            const time_finish = Date.now()
-            logger.info("processed " +DOMAIN+ " execution in " +  (time_finish - time_start)/1000 + " seconds")    
-            resolve()  
-        }
-    })
-})()
-
-/*
-async function execute(){
-
-    const time_start = Date.now()
-    logger.info("**************************executing " +DOMAIN+ " process***********************************************")
-
-    try{
-        ///////////////////stage 1//////////////////////////////////
-        //const json = await getProductsAndBrandCategoryLinks()
-
-       // const {products, brands, categories } = json
-       
-       // utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
-       // utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
-        //utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
-
-        
-
-        ////////////////////stage 2.a//////////////////////////////////
-
-        //const product_ids_by_category = await getProductIdsByCategory(categories)
-
-        //console.log(product_ids_by_category)
-        //utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
-
-        //const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
-        //const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
-        //const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
 
 
-        ////////////////////stage 2.b//////////////////////////////////
 
-        //const product_ids_by_brand = await getProductIdsByBrand(brands)
-       // utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids.json', product_ids_by_brand, logger)
-
-        ////////////////////////////////////// stage 3////////////////////////////////////////////////
-
-        
-
-    const merged_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
-
-    
-    
-    utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, merged_products, logger)
-    }
-    catch(err){
-        logger.error(err)
-    }
-    finally{
-        const time_finish = Date.now()
-        logger.info("processed " +DOMAIN+ " execution in " +  (time_finish - time_start)/1000 + " seconds")      
-    }
-}
-
-module.exports = { execute }
-*/
 /*
 
 const html = fs.readFileSync('test.html', {encoding:'utf8', flag:'r'})
