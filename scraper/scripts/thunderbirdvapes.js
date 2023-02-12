@@ -10,11 +10,10 @@ module.exports = (config) => {
         utils, 
         execute_scrape, 
         execute_inventory} = config
-
-    
+ 
     const log = utils.getLogger(log_file)
     const _data_dir = `${utils.ROOT_DATA_DIR}/${data_dir}`
-    utils.createDirs([data_dir])
+    utils.createDirs([_data_dir])
 
     return new Promise( async (resolve) => {
         log.info("**************************executing " + domain + " process***********************************************")
