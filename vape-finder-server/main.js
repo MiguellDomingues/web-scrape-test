@@ -21,11 +21,12 @@ var schema = buildSchema(`
   }
 
   type ProductInfo {
-    name:         String!                 
-    img_src:      String               
-    price:        String              
-    brand:        String             
-    category:     String   
+    name:             String!                 
+    img_src:          String
+    info_url:         String!               
+    price:            Float!             
+    brand:            String             
+    category_str:     String   
   }
 
   type Query {
@@ -48,12 +49,13 @@ class Product {
 }
 
 class ProductInfo {
-    constructor({name, img_src, price, brand, category}) {
+    constructor({name, img_src, price, brand, category_str,info_url}) {
         this.name = name
         this.img_src = img_src
         this.price = price
         this.brand = brand
-        this.category = category
+        this.category_str = category_str
+        this.info_url = info_url
   }
 }
 
