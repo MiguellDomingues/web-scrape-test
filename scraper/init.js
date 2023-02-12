@@ -5,6 +5,8 @@ execute scraping scripts and write inventory json to db upon completion
 */
 
 
+
+
 const tbvapes_config = {
    domain:              'https://www.thunderbirdvapes.com',
    data_dir:            'thunderbirdvapes',
@@ -59,12 +61,68 @@ const tbvapes_config = {
     execute_inventory:          true
 }
 
+const surreyvapes_config = {
+  domain:              'https://www.surreyvapes.com',
+  data_dir:            'surreyvapes',
+  raw_products_file:   'raw_products',
+  inventory_file:      'surreyvapes',
+  log_file:            'surreyvapes',
+  buckets: [
+    {
+        name: 'Juices',
+        synonyms: ['e-juice', //surreyvapes
+                   'ejuice',  //ezvape
+                   'e-liquid'] //tbvapes
+    },
+    {
+        name: 'Coils',
+        synonyms: ['coil','rda','atomizer']
+    },
+    {
+        name: 'Pods',
+        synonyms: ['pod',]
+    },
+    {
+        name: 'Tanks',
+        synonyms: ['tank','clearomizer']
+    },
+    {
+        name: 'Starter Kits',
+        synonyms: ['starter', 'kit','disposable']
+    },
+    {
+        name: 'Mods',
+        synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box']
+    },
+    {
+        name: 'Batteries',
+        synonyms: ['battery', 'batteries','18650']
+    },
+    {
+        name: 'Chargers',
+        synonyms: ['charger','charging']
+    },
+    {
+        name: 'Replacement Glass',
+        synonyms: ['glass','replacement','pyrex','replacement glass']
+    },
+    {
+        name: 'Accessories/Miscellaneous',
+        synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter','screwdriver','tweezer','decorative ring','magnet connector','vaper twizer']
+    },      
+],
+   utils:                      require("./utils.js"),
+   execute_scrape:             false,
+   execute_inventory:          true
+}
+
+
 
 
 Promise.all([
       //require("./scripts/ezvape"), 
-      require("./scripts/thunderbirdvapes")(tbvapes_config)
-     // require("./scripts/surreyvapes")
+      require("./scripts/thunderbirdvapes")(tbvapes_config),
+      require("./scripts/surreyvapes")(surreyvapes_config)
     ]).then( () => {
      // require("./scripts/inventory")
     })
