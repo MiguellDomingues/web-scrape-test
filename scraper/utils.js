@@ -160,20 +160,23 @@ function getProductBuckets(category_str, name_str, buckets){
 }
 
 //TODO: the scraper function should return a object of just key->arr's, instead of an arr OR an object of key->arrs
-async function scrapePages(urls, scraper, logger){
+async function scrapePages(urls, scraper, logger, limit = 300){
     return new Promise( async (resolve, reject) => {
         try{               
                 const time_start = Date.now()
                 const scraped_pages = []
+                let page_count = 0
 
                 for (const url of urls){
                     try{
                         const { data } = await axios.get(url)
                         const scraped_json = scraper(data)
 
-                        if(scraped_json.length === 0) 
+                        if(scraped_json.length === 0){
+                            logger.info(`scrape on ${url} failed to return any data. aborting` )
                             break
-
+                        }
+                         
                         if(scraped_json.length) 
                             logger.info("scraped "+ scraped_json.length + " items from "+ url)
                         else if(Object.keys(scraped_json).length)
@@ -181,8 +184,14 @@ async function scrapePages(urls, scraper, logger){
                                           
                         scraped_pages.push(scraped_json)
                         await (() => new Promise(resolve => setTimeout(resolve, REQUEST_TIME_OUT)))()
+                
+                        if(++page_count === limit){
+                            logger.info(`limit of ${limit} callouts reached. aborting` )
+                            break
+                        }
+
                     }catch(err){
-                        logger.info("error scraping "+ url)
+                        logger.info(err + "error scraping "+ url)
                         break
                     }           
                 }
