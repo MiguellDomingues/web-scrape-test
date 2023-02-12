@@ -105,6 +105,60 @@ function getMap(_logger){
     })(_logger)
 }
 
+function getProductBuckets(category_str, name_str, buckets){
+
+    /*
+    calculate the bucket points for each bucket by scanning the product category/name strs for keywords
+    return an object of the form { "bucketname1":{points: int}, "bucketname2":{points: int}, ... }
+    */
+    const bucket_points = ( (category_str, name_str) =>{
+        category_str = category_str.toLowerCase()
+        name_str = name_str.toLowerCase()
+
+        //count the occurances of src string inside the trgt string
+        const countMatches = (trgt, src) => {
+            const result = trgt.match(new RegExp(src, 'g'))
+            return result ? result.length : 0
+        }
+
+        /*
+        const countPositionalMatches = (trgt, src)=>{
+        let position_points = 0
+        trgt.split(',').forEach( (word, idx )=> position_points = position_points + word.includes(src) ? ++idx : 0)
+        return position_points
+      }
+        */
+
+        const bucket_points = {}
+
+        buckets.forEach( (bucket)=>{
+            bucket_points[bucket.name] = { points: 0}
+            bucket.synonyms.forEach( (synonym)=>{
+                synonym = synonym.toLowerCase()
+                let points = bucket_points[bucket.name].points
+                points = points + countMatches(category_str, synonym) + countMatches(name_str, synonym)
+                bucket_points[bucket.name].points = points
+            })
+        })
+
+        return bucket_points
+    })(category_str, name_str)
+
+    /*
+    return 0-n max score bucket name(s)
+    if multiple buckets were tied for max score, return those bucket names
+    if all the scores were 0, returns an empty list     
+    */
+    const max_points_buckets = ( (bp)=>{
+        const non_zero_points = Object.keys(bp).filter( k => bp[k].points > 0)                                                
+        const sorted_by_max_points = non_zero_points.sort( (lhs, rhs)=> bp[rhs].points - bp[lhs].points)
+        const max_points_bucket = sorted_by_max_points.shift()
+        return max_points_bucket ? [max_points_bucket, ...sorted_by_max_points.filter( k => bp[k].points === bp[max_points_bucket].points )] : []
+    })(bucket_points)
+
+    return max_points_buckets
+}
+
 //TODO: the scraper function should return a object of just key->arr's, instead of an arr OR an object of key->arrs
 async function scrapePages(urls, scraper, logger){
     return new Promise( async (resolve, reject) => {
@@ -144,4 +198,4 @@ async function scrapePages(urls, scraper, logger){
     })
 }
 
-module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, getMap, ROOT_DATA_DIR, INVENTORIES_DIR }
+module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, getMap, getProductBuckets, ROOT_DATA_DIR, INVENTORIES_DIR }

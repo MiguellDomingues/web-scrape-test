@@ -6,11 +6,57 @@ const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/thunderbirdvapes`
 //create the root data dir if it does not exist
 utils.createDirs([DATA_DIR])
 
-const ALL_PRODUCTS_FILE_NAME    = 'products'
+const RAW_PRODUCTS_FILE_NAME    = 'products'
 const INVENTORY_FILE_NAME       = 'thunderbirdvapes'
 const LOG_FILE_NAME             = 'thunderbirdvapes'
 
 const logger = utils.getLogger(LOG_FILE_NAME)
+
+const buckets = [
+    {
+        name: 'Juices',
+        synonyms: ['e-juice', //surreyvapes
+                   'ejuice',  //ezvape
+                   'e-liquid'] //tbvapes
+    },
+    {
+        name: 'Coils',
+        synonyms: ['coil','rda','atomizer','RPM 40 Pod','Ego 1 Coil 1.0 Ohm 5/Pk','Metal RDA Stand','Crown 5 Coil']
+    },
+    {
+        name: 'Pods',
+        synonyms: ['pod',]
+    },
+    {
+        name: 'Tanks',
+        synonyms: ['tank','clearomizer']
+    },
+    {
+        name: 'Starter Kits',
+        synonyms: ['starter', 'kit','disposable','disposables']
+    },
+    {
+        name: 'Mods',
+        synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box', 'Aegis Legend 2 200W Mod']
+    },
+    {
+        name: 'Batteries',
+        synonyms: ['battery', 'batteries','18650','18650','Evod 650mAh Battery']
+    },
+    {
+        name: 'Chargers',
+        synonyms: ['charger','charging','lush q4 charger','evod usb charger','Intellicharger I4 V2 Li-Ion/Nimh','Battery Charger','Wall Adapter','Power Bank']
+    },
+    {
+        name: 'Replacement Glass',
+        synonyms: ['glass','replacement','pyrex','replacement glass','dotAIO V2 Replacement Tank']
+    },
+    {
+        name: 'Accessories/Miscellaneous',
+        synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter',
+        'screwdriver','tweezer','decorative ring','magnet connector','vaper twizer','diy tool kit','Clapton Coil Building Kit','Zipper Storage Bag','Mouthpiece Glass']
+    }
+]
 
 function clean(raw_products){
 
@@ -26,7 +72,7 @@ function clean(raw_products){
         'Chargers', 
         'Batteries',]
 
-        return raw_products
+        raw_products = raw_products
         .map( (p)=>{
             p.product_type = p.product_type.split(" - ").join(",")
             return p
@@ -44,8 +90,16 @@ function clean(raw_products){
                 price:          p.variants && p.variants.length > 0 ? p.variants[0].price : null
             }
         })
+        .map( 
+            (p)=>{              // add product to 0 or more buckets, based on tags/synomyns within each bucket. print no bucket or multibucket matches to log
+                p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
+                p.buckets.length > 1 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+                p.buckets.length === 0 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+                //console.log(p.buckets , p.name, p.category)
+                return p})
 
     //TODO: the 'tag' array has lots of descriptive tags that would simplify categorizing/branding products from shopify-based stores
+    return raw_products
 }
 
 module.exports = ( () => {
@@ -69,12 +123,12 @@ module.exports = ( () => {
                 urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
         
             //visit urls, process each url with scraper function, return array of array of products
-            //const products = (await utils.scrapePages(urls, json=>json["products"],logger)).flat()
+           // const products = (await utils.scrapePages(urls, json=>json["products"],logger)).flat()
            
-            //utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
-            const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+            //utils.writeJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME, products, logger)
+            const products = utils.readJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME, logger)
 
-           //console.log(clean(products))
+           clean(products)
 
 
             utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(products) , logger)

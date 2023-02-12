@@ -6,9 +6,54 @@ const DATA_DIR                  = `${utils.ROOT_DATA_DIR}/surreyvapes`
 
 utils.createDirs([DATA_DIR])
 
-const ALL_PRODUCTS_FILE_NAME    = 'raw_products'
+const RAW_PRODUCTS_FILE_NAME    = 'raw_products'
 const INVENTORY_FILE_NAME       = 'surreyvapes'
 const LOG_FILE_NAME             = 'surreyvapes'
+
+const buckets = [
+    {
+        name: 'Juices',
+        synonyms: ['e-juice', //surreyvapes
+                   'ejuice',  //ezvape
+                   'e-liquid'] //tbvapes
+    },
+    {
+        name: 'Coils',
+        synonyms: ['coil','rda','atomizer']
+    },
+    {
+        name: 'Pods',
+        synonyms: ['pod',]
+    },
+    {
+        name: 'Tanks',
+        synonyms: ['tank','clearomizer']
+    },
+    {
+        name: 'Starter Kits',
+        synonyms: ['starter', 'kit','disposable']
+    },
+    {
+        name: 'Mods',
+        synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box']
+    },
+    {
+        name: 'Batteries',
+        synonyms: ['battery', 'batteries','18650']
+    },
+    {
+        name: 'Chargers',
+        synonyms: ['charger','charging']
+    },
+    {
+        name: 'Replacement Glass',
+        synonyms: ['glass','replacement','pyrex','replacement glass']
+    },
+    {
+        name: 'Accessories/Miscellaneous',
+        synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter','screwdriver','tweezer','decorative ring','magnet connector','vaper twizer']
+    },      
+]
 
 const logger = utils.getLogger(LOG_FILE_NAME)
 
@@ -41,6 +86,8 @@ function scrapeProductInfo(html) {
 
 function clean(raw_products){
 
+    //console.log(raw_products.length)
+
     // remove non-vape products, such as rolling-papers, vaporizers, lighters, butane, etc
     // this is acquired from analysis of categories
     let includes = [
@@ -49,21 +96,42 @@ function clean(raw_products){
         'E-Cigs',
         'E-Juice',]
 
-    return raw_products
-    .filter(                    // remove no-category products
-        (p) => p.category) 
-    .map( (p)=>{                // break up category string by "/", remove first element if it's "PRODUCTS", join with ,'s
+    let ignore = [
+        'Rockit Cruiser']
+
+    raw_products = raw_products
+    .filter(                    
+        (p) =>              // remove no-category products
+            p.category) 
+    .map( (p)=>{            // turn PRODUCTS/a/b/c... into a,b,c             
         let arr = p.category.split("/")
         if(arr[0] === 'PRODUCTS') arr.shift()
         let str = arr.join(",")
         p.category = str
         return p })
-    .filter(                        // only include products that matches at least one of the strings in the includes arr                                                       
-        (p)=> includes.filter( (tag) => p.category.includes(tag) ).length > 0 )
-    .map(                           // if the item has no brand or a default brand, extract the first word from the name string and set it as the brand
-        (p) => {
+    .filter(                                                                            
+        (p)=>               // only include products that matches at least one of the strings in the includes arr   
+            includes.filter( (tag) => p.category.includes(tag) ).length > 0  )
+    .filter(                                                                            
+        (p)=>               // ignore products with a name that matches least one of the strings in the ignore arr   
+            ignore.filter( (tag) => p.name.includes(tag) ).length === 0  ) 
+    .map(                           
+        (p) => {            // if the item has no brand or a default brand, extract the first word from the name string and set it as the brand
             p.brand = (p.brand === '' || p.brand.includes("The Best Vape Store In Surrey") ) ? p.name.split(" ")[0] : p.brand
             return p})
+    .map( 
+        (p)=>{              // add product to 0 or more buckets, based on tags/synomyns within each bucket. print no bucket or multibucket matches to log
+            p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
+            p.buckets.length > 1 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            p.buckets.length === 0 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            //console.log(p.buckets , p.name, p.category)
+            return p})
+
+    //console.log(raw_products.length)     
+
+    return raw_products
+
+    
 }
 
 module.exports = ( () => {
@@ -88,10 +156,14 @@ module.exports = ( () => {
                 urls.push(`${DOMAIN}/${subpath}?${limit_param}&${page_param(page)}`)
             
             //visit urls, process each url with scraper function, return array of products
-            const raw_products = (await utils.scrapePages(urls, scrapeProductInfo,logger)).flat()
+        const raw_products = (await utils.scrapePages(urls, scrapeProductInfo,logger)).flat()
 
-            utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, raw_products, logger)
-            utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(raw_products), logger)
+            //const raw_products = utils.readJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME, logger)
+
+           // console.log(clean(products))
+
+        utils.writeJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME, raw_products, logger)
+        utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(raw_products), logger)
         
         }catch(err){
             logger.error(err)

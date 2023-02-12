@@ -9,13 +9,59 @@ const CATEGORIES_SUBDIR         = `${DATA_DIR}/categories`
 
 utils.createDirs([DATA_DIR, BRANDS_SUBDIR, CATEGORIES_SUBDIR])
 
-const ALL_PRODUCTS_FILE_NAME    = 'products'
+const RAW_PRODUCTS_FILE_NAME     = 'products'
 const BRAND_LINKS_FILE_NAME     = 'brand_links'
 const CATEGORY_LINKS_FILE_NAME  = 'category_links'
 const LOG_FILE_NAME             = 'ezvape'
 const INVENTORY_FILE_NAME       = 'ezvape'
 
 const logger = utils.getLogger(LOG_FILE_NAME)
+
+const buckets = [
+    {
+        name: 'Juices',
+        synonyms: ['e-juice', //surreyvapes
+                   'ejuice',  //ezvape
+                   'e-liquid'] //tbvapes
+    },
+    {
+        name: 'Coils',
+        synonyms: ['coil','rda','atomizer','RPM 40 Pod','Ego 1 Coil 1.0 Ohm 5/Pk','Metal RDA Stand','Crown 5 Coil']
+    },
+    {
+        name: 'Pods',
+        synonyms: ['pod',]
+    },
+    {
+        name: 'Tanks',
+        synonyms: ['tank','clearomizer']
+    },
+    {
+        name: 'Starter Kits',
+        synonyms: ['starter', 'kit','disposable','disposables']
+    },
+    {
+        name: 'Mods',
+        synonyms: ['boxes', 'boxmod', 'box mod', 'mod', 'box']
+    },
+    {
+        name: 'Batteries',
+        synonyms: ['battery', 'batteries','18650']
+    },
+    {
+        name: 'Chargers',
+        synonyms: ['charger','charging','lush q4 charger','evod usb charger','Intellicharger I4 V2 Li-Ion/Nimh','Battery Charger','Wall Adapter','Power Bank']
+    },
+    {
+        name: 'Replacement Glass',
+        synonyms: ['glass','replacement','pyrex','replacement glass']
+    },
+    {
+        name: 'Accessories/Miscellaneous',
+        synonyms: ['wire','drip tip','cotton','apparel','mod accessories','pens','wick','adapter',
+        'screwdriver','tweezer','decorative ring','magnet connector','vaper twizer','diy tool kit','Clapton Coil Building Kit','Zipper Storage Bag','Mouthpiece Glass']
+    },      
+]
 
 function scrapeProductIds(html){
 
@@ -239,6 +285,13 @@ function clean(raw_products){
         return product})
     .filter(                                                                              
         (p)=> includes.filter( (tag) => p.category.includes(tag) ).length > 0 ) // remove products that are not part of specific categories
+    .map( 
+        (p)=>{              // add product to 0 or more buckets, based on tags/synomyns within each bucket. print no bucket or multibucket matches to log
+            p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
+            p.buckets.length > 1 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            p.buckets.length === 0 && logger.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+           // console.log(p.buckets , p.name, p.category)
+    return p})
 }
 
 module.exports = ( () => {
@@ -250,22 +303,22 @@ module.exports = ( () => {
             
             ///////////////////stage 1////////////////////////////////// scrape the product id/img/price/name without category/brands; scrape the category/brand links
 
-              /*
-            const json = await getProductsAndBrandCategoryLinks()
+              
+            //const json = await getProductsAndBrandCategoryLinks()
 
-            const {products, brands, categories } = json
+           // const {products, brands, categories } = json
 
-            console.log(products)
+           // console.log(products)
 
-            utils.writeJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, products, logger)
+           // utils.writeJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME , products, logger)
            
-            utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
-            utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
+           // utils.writeJSON(BRANDS_SUBDIR, BRAND_LINKS_FILE_NAME, brands, logger)
+          //  utils.writeJSON(CATEGORIES_SUBDIR, CATEGORY_LINKS_FILE_NAME, categories, logger)
 
             ////////////////////stage 2.a////////////////////////////////// visit each category url; scrape the product ids
 
-            const product_ids_by_category = await getProductIdsByCategory(categories)
-            utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids.json', product_ids_by_category, logger)
+          //  const product_ids_by_category = await getProductIdsByCategory(categories)
+          //  utils.writeJSON(CATEGORIES_SUBDIR, 'category_product_ids', product_ids_by_category, logger)
 
             // const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
             //const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
@@ -273,17 +326,17 @@ module.exports = ( () => {
 
             ////////////////////stage 2.b////////////////////////////////// visit the each brand url; scrape the product ids
 
-            const product_ids_by_brand = await getProductIdsByBrand(brands)
-            utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids.json', product_ids_by_brand, logger)
+           // const product_ids_by_brand = await getProductIdsByBrand(brands)
+          //  utils.writeJSON(BRANDS_SUBDIR, 'brand_product_ids', product_ids_by_brand, logger)
 
             ////////////////////////////////////// stage 3//////////////////////////////////////////////// merge the products with brand/category by id
-*/
-           const products = utils.readJSON(DATA_DIR, ALL_PRODUCTS_FILE_NAME, logger)
+
+           const products = utils.readJSON(DATA_DIR, RAW_PRODUCTS_FILE_NAME , logger)
             const product_ids_by_category = utils.readJSON(CATEGORIES_SUBDIR, 'category_product_ids', logger)
             const product_ids_by_brand = utils.readJSON(BRANDS_SUBDIR, 'brand_product_ids', logger)
 
             const merged_products = mergeBrandsCategoriesWithProducts(products, product_ids_by_brand, product_ids_by_category)
-
+            //clean(merged_products)
 
             utils.writeJSON(utils.INVENTORIES_DIR, INVENTORY_FILE_NAME, clean(merged_products), logger)
         }
