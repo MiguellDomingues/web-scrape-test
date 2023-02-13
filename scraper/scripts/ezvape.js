@@ -208,8 +208,6 @@ function scrapeProductIds(html){
     return product_ids
 }
 
-
-
 function categorizeBrandProducts(products, brand_product_ids, category_product_ids, log)
 {
     log.info("**** adding brands and categories to products ****")
@@ -226,30 +224,12 @@ function categorizeBrandProducts(products, brand_product_ids, category_product_i
         category_product_ids[key].forEach( id => 
             products_by_id[id] ?  products_by_id[id].category =  key : undefined))
 
-
-    let pc_c = 0, Pc_c = 0, pC_c = 0, PC_c = 0, p_c = 0
-
     const merged_products = []
 
     Object.keys(products_by_id).forEach( (key)=>{
-
         const product = products_by_id[key]
-
-        if(!('category' in product) && !('brand' in product)) pc_c++       
-        if('category' in product  && !('brand' in product))Pc_c++
-        if(!('category' in product)  && 'brand' in product)pC_c++
-        if('category' in product  && 'brand' in product) PC_c++
-        if(product.price.length === 0 ) p_c++
-
         merged_products.push( {id: key, ...product} )
     })
-
-    log.info("products count: "+ Object.keys(products_by_id).length )
-    log.info("products without category and without brand: "+ pc_c,)
-    log.info("products with category and without brand: "+ Pc_c,)
-    log.info("products without category and with brand: "+ pC_c,)
-    log.info("products with category and with brand: "+ PC_c,)
-    log.info("products without price: "+ p_c,)
 
     return merged_products
 }
@@ -298,6 +278,8 @@ function clean(raw_products, buckets, utils, log){
         'Accessories',]
 
     log.info(`//////////cleaning raw products: count: ${raw_products.length}////////////////`)
+    const pb = utils.initProductBucketMetrics(log)
+    const pc = utils.propsCount(log)
 
     raw_products = raw_products
     .filter( 
@@ -319,9 +301,13 @@ function clean(raw_products, buckets, utils, log){
             p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
             p.buckets.length > 1 && log.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
             p.buckets.length === 0 && log.error(`no buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            pb.putProductBuckets(p.buckets,p)
+            pc.countProps(p)
            // console.log(p.buckets , p.name, p.category)
     return p})
 
+    pb.printProductBuckets()
+    pc.printPropsCount()
     log.info(`//////////finished cleaning: count: ${raw_products.length} ////////////////`)
 
     return raw_products

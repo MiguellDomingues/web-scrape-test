@@ -98,6 +98,9 @@ function clean(raw_products, buckets, utils, log){
     let ignore = [
         'Rockit Cruiser']
 
+    const pb = utils.initProductBucketMetrics(log)
+    const pc = utils.propsCount(log)
+
     log.info(`//////////cleaning raw products: count: ${raw_products.length}////////////////`)
 
     raw_products = raw_products
@@ -125,9 +128,13 @@ function clean(raw_products, buckets, utils, log){
             p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
             p.buckets.length > 1 && log.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
             p.buckets.length === 0 && log.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            pb.putProductBuckets(p.buckets,p)
+            pc.countProps(p)
             //console.log(p.buckets , p.name, p.category)
             return p})
 
+            pb.printProductBuckets()
+            pc.printPropsCount()
             log.info(`//////////finished cleaning: count: ${raw_products.length} ////////////////`)   
 
     return raw_products

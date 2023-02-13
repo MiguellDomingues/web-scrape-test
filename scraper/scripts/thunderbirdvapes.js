@@ -48,34 +48,40 @@ function clean(raw_products, domain, buckets, utils, log){
         'Chargers', 
         'Batteries',]
 
-        log.info(`//////////cleaning raw products: count: ${raw_products.length}////////////////`)
+    log.info(`//////////cleaning raw products: count: ${raw_products.length}////////////////`)
+    const pb = utils.initProductBucketMetrics(log)
+    const pc = utils.propsCount(log)
 
-        raw_products = raw_products
-        .map( (p)=>{
-            p.product_type = p.product_type.split(" - ").join(",")
+    raw_products = raw_products
+    .map( (p)=>{
+        p.product_type = p.product_type.split(" - ").join(",")
             return p
-        })
-        .filter(                                                                              
-            (p)=> includes.filter( (tag) => p.product_type.includes(tag) ).length > 0 )
-        .map( (p)=>{
-            return {
-                id:             p.id,  
-                name:           p.title,
-                src:            `${domain}/products/${p.handle}`,    
-                brand:          p.vendor,
-                category:       p.product_type,
-                img:            p.images && p.images.length > 0 ? p.images[0].src : null,
-                price:          p.variants && p.variants.length > 0 ? p.variants[0].price : null
-            }
-        })
-        .map( 
-            (p)=>{              // add product to 0 or more buckets, based on tags/synomyns within each bucket. print no bucket or multibucket matches to log
-                p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
-                p.buckets.length > 1 && log.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
-                p.buckets.length === 0 && log.info(`no buckets: ${p.buckets} , ${p.name}, ${p.category}`)
-                //console.log(p.buckets , p.name, p.category)
-                return p})
+    })
+    .filter(                                                                              
+        (p)=> includes.filter( (tag) => p.product_type.includes(tag) ).length > 0 )
+    .map( (p)=>{
+        return {
+            id:             p.id,  
+            name:           p.title,
+            src:            `${domain}/products/${p.handle}`,    
+            brand:          p.vendor,
+            category:       p.product_type,
+            img:            p.images && p.images.length > 0 ? p.images[0].src : null,
+            price:          p.variants && p.variants.length > 0 ? p.variants[0].price : null
+        }
+    })
+    .map( 
+        (p)=>{              // add product to 0 or more buckets, based on tags/synomyns within each bucket. print no bucket or multibucket matches to log
+            p.buckets = utils.getProductBuckets(p.category, p.name, buckets)
+            p.buckets.length > 1 && log.info(`multiple buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            p.buckets.length === 0 && log.info(`no buckets: ${p.buckets} , ${p.name}, ${p.category}`)
+            pb.putProductBuckets(p.buckets,p)
+            pc.countProps(p)
+            //console.log(p.buckets , p.name, p.category)
+            return p})
 
+    pb.printProductBuckets()
+    pc.printPropsCount()
     log.info(`//////////finished cleaning: count: ${raw_products.length} ////////////////`)
 
     return raw_products

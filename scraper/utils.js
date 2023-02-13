@@ -71,9 +71,8 @@ function getLogger(log_file_name){
     })()
 }
 
-// like a class...
-function getMap(_logger){
-    
+function initProductBucketMetrics(_logger){
+        
     //like an instance of the class
     return (function (_logger){
         // the public variables
@@ -81,28 +80,52 @@ function getMap(_logger){
         const logger = _logger
 
         return {
-            put: function (k,v) {
-                const arr = m.has(k) ? m.get(k) : []
-                arr.push(v)
-                m.set(k, arr) },
-            print: function (){ 
-                let sorted = []
-                m.forEach( (v,k) => sorted.push(k) );
-                sorted.sort().forEach( k => logger.info( k + " : " + m.get(k).length))},
-            merge: function (src){
-                for (const k of src.keys()) {
-                    if(m.has(k)){
-                        //
-                        m.get(k).push(...src.get(k))
-                        //m.set(k, arr)
-                    }else{
-                        m.set(k, [...src.get(k)] )
-                    }
-                }
+            putProductBuckets: function (buckets,v) {
+                buckets.forEach( (k)=>{
+                    const arr = m.has(k) ? m.get(k) : []
+                    arr.push(v)
+                    m.set(k, arr) })
             },
-            getMap: m
+            printProductBuckets: function (print_buckets = false){ 
+                let sorted = [], p_count = 0, b_count = 0
+                m.forEach( (v,k) => sorted.push(k) );
+                sorted.sort().forEach( k => {
+                    logger.info( k + " : " + m.get(k).length)
+                    print_buckets && m.get(k).forEach( p => logger.info(`   ${p.name} : ${p.category}`))
+                    p_count = p_count + m.get(k).length
+                    b_count++
+                })
+                logger.info(`${p_count} products have been mapped across ${b_count} buckets`)
+            },
         }
     })(_logger)
+}
+
+function propsCount(_log){
+    return (function (_log){
+        // the public variables
+        let id_c = 0, src_c = 0, brand_c = 0, category_c = 0, img_c = 0, price_c = 0
+        const log = _log
+        
+        return {
+            countProps: function (p) {
+                if( ('id' in p) && p.id)             id_c++
+                if( ('src' in p) && p.src)           src_c++
+                if( ('brand' in p) && p.brand)       brand_c++
+                if( ('category' in p) && p.category) category_c++
+                if( ('img' in p) && p.img)           img_c++
+                if( ('price' in p) && p.price)       price_c++                      
+            },
+            printPropsCount: function (){ 
+                log.info(`products with id ${id_c}`)
+                log.info(`products with src ${src_c}`)
+                log.info(`products with brand ${brand_c}`)
+                log.info(`products with category ${category_c}`)
+                log.info(`products with img ${img_c}`)
+                log.info(`products with price ${price_c}`)                 
+            },
+        }
+    })(_log)
 }
 
 function getProductBuckets(category_str, name_str, buckets){
@@ -207,4 +230,4 @@ async function scrapePages(urls, scraper, logger, limit = 300){
     })
 }
 
-module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, getMap, getProductBuckets, ROOT_DATA_DIR, INVENTORIES_DIR }
+module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, initProductBucketMetrics, getProductBuckets, propsCount, ROOT_DATA_DIR, INVENTORIES_DIR }
