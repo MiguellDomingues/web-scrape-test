@@ -4,8 +4,72 @@ execute scraping scripts and write inventory json to db upon completion
 - ezvape takes about 5 minutes to fully scrape
 */
 
+//change each part in this:
+/*
+
+TODO:
+- add these jsons to another file 
+- (or should i just put them back as constants?)
+- make utils a class; put in the logger/file names/paths etc?
+  - make stuff a lot easier going forward i think
+- create a analytics? type routine to analyze, missing fields, etc
+
+(name){
+  reads: [ arr of file names that read for this process INSTEAD OF SCRAPING]
+  writes: [ arr of output files (if any)]
+
+  ezvapes:{
+    domain
+    ....
+    (name of read dir/defaults to read)
+    (name of write dir/defaults to write)
+    ....
+
+    //CHECK FILE DEPENDENCIES BEFORE SCRAPING ANYTHING
+    NEEDS TO ABORT IF IT DETECTS THAT FILES ARE MISSING OR SCRAPES THAT PRODUCE DEPENDENCY DATA ARE SET TO FALSE
+
+    for each pipeline:
+      - if execute is F:
+        - add the read arr[] to dependencies set
+      else
+        - add writes arr[] to fufilled_dependencies set
+
+     for each d in dependencies set:
+      - does d exist in fufilled_dependencies?
+          T: remove it from dependencies set <- a single file can fufull multiple dependencies (assuming its same file in same folder))
+          F: does the file exist to be consumed?
+            t: load it
+            f: abort this scrape because were missing a file
+      
+    
+    
 
 
+    //THESE ARE PIPELINES 
+    fetch_products:{
+      exec = T/F <---- IF THIS IS FALSE, then scan for existence of file names in writes[] arr // those files are dependencies for any other processes after that need raw_products
+       if it is true, then it outputs data for the writes 
+      consumes/reads: [raw_products], <-- if exe is F, read this
+      produces/writes:[brand_links, category_links, raw_products] <-- 
+    }
+    fetch_brand_ids:{
+      //exec = T/F <-- needs to either open a brand_link file (so a previous fetch_products scape needed to have been done) OR fetch_products needs to be true
+      reads[brand_links_file]
+      writes[brand_product_ids]
+    }
+    fetch_caegory_ids:{
+      T/F <-- needs to either open a category_link file (so a previous fetch_products scape needed to have been done) OR fetch_products needs to be true
+      reads[cate_links_file]
+      writes[cate_product_ids]
+    }
+    write_inventory:{
+      reads[product_id, cate_product_ids_file, brand_product_ids_file]
+      writes[inventory_file]
+    }
+
+  }
+}
+*/
 
 const tbvapes_config = {
    domain:              'https://www.thunderbirdvapes.com',
@@ -58,7 +122,7 @@ const tbvapes_config = {
     ],
     utils:                      require("./utils.js"),
     execute_scrape:             false,
-    execute_inventory:          true
+    execute_inventory:          false
 }
 
 const surreyvapes_config = {
@@ -113,49 +177,8 @@ const surreyvapes_config = {
 ],
    utils:                      require("./utils.js"),
    execute_scrape:             false,
-   execute_inventory:          true
+   execute_inventory:          false
 }
-
-//change each part in this:
-/*
-(name){
-  reads: [ arr of file names that read for this process INSTEAD OF SCRAPING]
-  writes: [ arr of output files (if any)]
-
-  ezvapes:{
-    domain
-    ....
-    (name of read dir/defaults to read)
-    (name of write dir/defaults to write)
-    ....
-
-    //CHECK FILE DEPENDENCIES BEFORE SCRAPING ANYTHING
-    NEEDS TO ABORT IF IT DETECTS THAT FILES ARE MISSING OR SCRAPES THAT PRODUCE DEPENDENCY DATA ARE SET TO FALSE
-
-    fetch_products:{
-      exec = T/F <---- IF THIS IS FALSE, then scan for existence of file names in writes[] arr // those files are dependencies for any other processes after that need raw_products
-       if it is true, then it outputs data for the writes 
-      reads[raw_products], <-- if exe is F, read this
-      writes[brand_links, category_links, raw_products] <-- 
-    }
-    fetch_brand_ids:{
-      //exec = T/F <-- needs to either open a brand_link file (so a previous fetch_products scape needed to have been done) OR fetch_products needs to be true
-      reads[brand_links_file]
-      writes[brand_product_ids]
-    }
-    fetch_caegory_ids:{
-      T/F <-- needs to either open a category_link file (so a previous fetch_products scape needed to have been done) OR fetch_products needs to be true
-      reads[cate_links_file]
-      writes[cate_product_ids]
-    }
-    write_inventory:{
-      reads[product_id, cate_product_ids_file, brand_product_ids_file]
-      writes[inventory_file]
-    }
-
-  }
-}
-*/
 
 const ezvapes_config = {
   domain:                    'https://ezvape.com',
@@ -172,7 +195,7 @@ const ezvapes_config = {
     brand_links_file:       'brand_links',
     b_product_ids_file:     'brand_product_ids',
     brands_subdir:          'brands' ,
-    exec_scrape:   true,
+    exec_scrape:   false,
   },
   
   fetch_category_ids:{
@@ -229,7 +252,7 @@ const ezvapes_config = {
           'screwdriver','tweezer','decorative ring','magnet connector','vaper twizer','diy tool kit','Clapton Coil Building Kit','Zipper Storage Bag','Mouthpiece Glass']
       },      
   ],
-    exec_inventory:         true,
+    exec_inventory:         false,
   },
 }
 
@@ -237,9 +260,9 @@ const ezvapes_config = {
 
 
 Promise.all([
-    require("./scripts/ezvape")(ezvapes_config), 
+      require("./scripts/ezvape")(ezvapes_config), 
       //require("./scripts/thunderbirdvapes")(tbvapes_config),
-      //require("./scripts/surreyvapes")(surreyvapes_config)
+     // require("./scripts/surreyvapes")(surreyvapes_config)
     ]).then( () => {
      // require("./scripts/inventory")
     })
