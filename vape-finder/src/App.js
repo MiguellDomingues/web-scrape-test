@@ -10,22 +10,14 @@ import './app.css'
 
 function App() {
 
-  const tags = []
+  const query = useQuery(GET_PRODUCTS, { variables: { category: "", stores: [], brands: [] } });
 
-  const query = useQuery(GET_PRODUCTS, { variables: { tags } });
+  const refetch = (c,b,s) => query.refetch({ category: c, brands: b, stores: s })
 
-  const onTagSelected = (tag) => { 
-    console.log(tag)
-    tags.push(tag)
-    
-    query.refetch({ tags: tags  })
-
-  }
-  
   return (
     <div className="page"> 
       <div className="app">
-        <Header selected={onTagSelected}/>
+        <Header refetch={refetch}/>
         <Body query={query}/>
         <Footer/>
       </div>

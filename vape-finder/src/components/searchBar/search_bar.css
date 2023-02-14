@@ -38,6 +38,10 @@
     margin-right: 5px;  
 }
 
+.filter_selected{
+    background-color: rgb(31, 188, 186);
+}
+
 
 .dropdown-arrow{
     height: 0;
@@ -72,7 +76,7 @@
     display: block;
 }
 
-.dropdown-content span:hover {background-color: #ddd;}
+/*.dropdown-content span:hover {background-color: #ddd;}*/
 
 .brands:hover .dropdown-content {display: block;}
 .shops:hover .dropdown-content {display: block;}
