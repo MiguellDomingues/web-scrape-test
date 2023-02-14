@@ -3,13 +3,13 @@ import './card.css'
 //can also link images using import or require() 
 //import demoImage from './demo.webp'; 
 
-//const img_src = '../../../demo.webp';
+const img_src = '../../../demo.webp';
 
 function Card( {product} ) {
   //const {id, name, brand, category, img, price, last_updated, source} = product
 
   const {id, last_updated, source_id, source_url, info } = product
-  const{ brand, category, name, price, info_url, img_src } = info
+  const{ brand, category, name, price, info_url,  } = info
 
   const vendor = source_url.split("//")[1].split(".")[0]
   const format_price = price.toFixed(2);
@@ -24,8 +24,8 @@ function Card( {product} ) {
   return (
     <div className="card">
       
-      <a href={source_url} target="_blank" rel="noopener noreferrer">{vendor}<br/></a>
-      <span>{brand}<br/></span>     
+      <a href={info_url} target="_blank" rel="noopener noreferrer">{vendor}<br/></a>
+      {brand && <><span>{brand}<br/></span></> }    
       <span className="title">{format_name}<br/></span>   
       <span>${format_price}<br/></span>
 
