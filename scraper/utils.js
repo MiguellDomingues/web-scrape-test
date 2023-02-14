@@ -86,7 +86,12 @@ function initProductBucketMetrics(_logger){
                     arr.push(v)
                     m.set(k, arr) })
             },
-            printProductBuckets: function (print_buckets = false){ 
+            generateTagMetaData: function (type_name){
+                const tag_md = { type_name, tags: [] } 
+                for (let [k, v] of m) tag_md.tags.push({ tag_name: k, product_count: v.length})              
+                return tag_md
+            },     
+            printProductBuckets: function (print_buckets = false, bucket_name = 'buckets'){ 
                 let sorted = [], p_count = 0, b_count = 0
                 m.forEach( (v,k) => sorted.push(k) );
                 sorted.sort().forEach( k => {
@@ -95,7 +100,7 @@ function initProductBucketMetrics(_logger){
                     p_count = p_count + m.get(k).length
                     b_count++
                 })
-                logger.info(`${p_count} products have been mapped across ${b_count} buckets`)
+                logger.info(`${p_count} products have been mapped across ${b_count} ${bucket_name}`)
             },
         }
     })(_logger)
@@ -230,4 +235,15 @@ async function scrapePages(urls, scraper, logger, limit = 300){
     })
 }
 
-module.exports = { writeJSON, readJSON, getLogger, scrapePages, createDirs, initProductBucketMetrics, getProductBuckets, propsCount, ROOT_DATA_DIR, INVENTORIES_DIR }
+module.exports = { 
+    writeJSON, 
+    readJSON, 
+    getLogger, 
+    scrapePages, 
+    createDirs, 
+    initProductBucketMetrics, 
+    getProductBuckets, 
+    propsCount,  
+    ROOT_DATA_DIR, 
+    INVENTORIES_DIR 
+}
