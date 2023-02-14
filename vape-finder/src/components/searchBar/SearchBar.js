@@ -1,23 +1,18 @@
 import './search_bar.css'
 
-import {useState, useEffect} from 'react'
+import {useState} from 'react'
 
 const categories = ['Juices','Coils','Pods','Tanks','Starter Kits','Mods','Batteries','Chargers','Replacement Glass','Accessories/Miscellaneous',]
     
 const _brands = [
-    'ALLO', 'GORE', 'JUUL', 'VOOPOO'
+    'Allo', 'GORE', 'JUUL', 'Voopoo'
 ]
 
 const _stores = [
-    'EZVAPE','SURREY VAPES', 'THUNDERBIRD VAPES'
+    'EZVAPE','SURREYVAPES', 'THUNDERBIRDVAPES'
 ]
 
-
 function SearchBar( {refetch} ){
-
-    //console.log(refetch)
-
-  //const  { refetch } = refetch
 
    const [category, setCategory] = useState("");
    const [stores, setStores] = useState([]);
@@ -27,7 +22,7 @@ function SearchBar( {refetch} ){
 
    echo()
 
-   const selectedFilter = (str, arr) => arr.includes(str) ? " filter_selected" : "" 
+   const selectedFilterBGC = (str, arr) => arr.includes(str) ? " filter_selected" : "" 
 
    const onCategorySelected = (_category) => {
      const __category = _category === category ? "" : _category
@@ -52,7 +47,7 @@ return (<>
 
         <div className="search_bar_categories">
             {categories.map( (_category, idx) =>
-                <span className={"search_bar_category cursor_hand" + selectedFilter(category, [_category])} 
+                <span className={"search_bar_category cursor_hand" + selectedFilterBGC(category, [_category])} 
                       key={idx} 
                       onClick={ () => onCategorySelected(_category) }>
                     {_category}  
@@ -65,7 +60,7 @@ return (<>
                 <div className="dropdown-arrow"></div>
                 <div className="dropdown-content">    
                     {_brands.map( (brand, idx)=>
-                        <span className={selectedFilter(brand, brands)} //selectedFilter(brand, brands)
+                        <span className={selectedFilterBGC(brand, brands)}
                               key={idx} 
                               onClick={ ()=> onBrandSelected(brand) }>
                              {brand}
@@ -77,7 +72,7 @@ return (<>
                 <div className="dropdown-arrow"></div>
                 <div className="dropdown-content">    
                     {_stores.map( (shop, idx)=>
-                    <span className={selectedFilter(shop, stores)}  
+                    <span className={selectedFilterBGC(shop, stores)}  
                           key={idx} 
                           onClick={ () => onStoreSelected(shop) }>
                          {shop}
@@ -88,7 +83,6 @@ return (<>
            <span className="about cursor_hand">About</span> 
         </div>
     </>)
-
 }
 
 export default SearchBar

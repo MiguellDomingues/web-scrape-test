@@ -2,7 +2,7 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
-var { fetchProducts, fetchProductsByBucket } = require('../database/read/readProducts.js')
+var { fetchProducts, fetchProductsByCategoryBrandStore } = require('../database/read/readProducts.js')
 
 var app = express();
 var cors = require('cors');
@@ -59,12 +59,38 @@ class ProductInfo {
   }
 }
 
+/*
+{
+    "categories": {"$in": categories}, 
+    "product_info.brand": {"$in": brands},
+    "source": {"$in": stores} 
+            }
+*/
+
 var root = {
     getProducts: async ( {category, stores, brands} ) => {
 
       console.log(category, stores, brands)
 
+      if(category.length === 0 && stores.length === 0 && brands.length === 0){
+        return (await fetchProducts()).map( product => new Product(product))
+      }
+
+      const query_str = {}
+
+      //if(category.length > 0) 
+      query_str["categories"] = { "$in" : ["Tanks","Pods","Coils"] }
+     // if(stores.length > 0) 
+      query_str["source"] = { "$in" : ["ezvape"]}
+    //  if(brands.length > 0) 
+     // query_str["product_info.brand"] = { "$in" : ["Smok","Allo","SMOK"] }
+
+      console.log(query_str)
+
+      return (await fetchProductsByCategoryBrandStore(query_str) ).map( product => new Product(product))
+
       /*
+      SURREYVAPES
       if(tags.length === 0){
         console.log("no tags")
         return (await fetchProducts()).map( product => new Product(product))
@@ -73,7 +99,7 @@ var root = {
         return (await fetchProductsByBucket(tags)).map( product => new Product(product))
       }
       */
-        return (await fetchProducts()).map( product => new Product(product))
+       
       
 
       //return (await fetchProducts()).map( product => new Product(product))
