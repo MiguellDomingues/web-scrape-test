@@ -2,7 +2,7 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
-var fetchProducts = require('../database/read/readProducts.js')
+var { fetchProducts, fetchProductsByBucket } = require('../database/read/readProducts.js')
 
 var app = express();
 var cors = require('cors');
@@ -30,7 +30,7 @@ var schema = buildSchema(`
   }
 
   type Query {
-    getProducts(tags: [String!]): [Product!]
+    getProducts(category: String!, stores: [String!], brands: [String!]): [Product!]
   }
 `);
 
@@ -60,13 +60,25 @@ class ProductInfo {
 }
 
 var root = {
-    getProducts: async ( { tags} ) => {
-      console.log(tags)
+    getProducts: async ( {category, stores, brands} ) => {
 
-      const a = tags.length > 0 ? 3 : 4
-      console.log(a)
+      console.log(category, stores, brands)
 
-      return (await fetchProducts()).map( product => new Product(product))
+      /*
+      if(tags.length === 0){
+        console.log("no tags")
+        return (await fetchProducts()).map( product => new Product(product))
+      }else{
+        console.log("tags: ", tags)
+        return (await fetchProductsByBucket(tags)).map( product => new Product(product))
+      }
+      */
+        return (await fetchProducts()).map( product => new Product(product))
+      
+
+      //return (await fetchProducts()).map( product => new Product(product))
+
+      
     },
 };
 
