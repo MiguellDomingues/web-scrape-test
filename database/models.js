@@ -30,7 +30,18 @@ const productSchema = new mongoose.Schema({
     } 
 });
 
+const tagMetaData = new mongoose.Schema({
+    type_name:        { type: String, required: true }, //categories, brands, stores, flavors  
+    tags:             { type: [{
+                            tag_name:          { type: String, required: true }, 
+                            product_count:     { type: Number, required: true }
+                      }], required: true},
+
+    
+});
+
 module.exports = {
-    Product: mongoose.models.Product || mongoose.model('Product', productSchema),
+    Product:     mongoose.models.Product || mongoose.model('Product', productSchema),
+    TagMetaData: mongoose.models.TagMetaData || mongoose.model('TagMetaData', tagMetaData),
   }
 
