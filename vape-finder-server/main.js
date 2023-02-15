@@ -2,7 +2,7 @@ var express = require('express');
 var { graphqlHTTP } = require('express-graphql');
 var { buildSchema } = require('graphql');
 
-var { fetchProducts, fetchProductsByCategoryBrandStore } = require('../database/read/readProducts.js')
+var { fetchProducts, fetchProductsByCategoryBrandStore, fetchTagMetaData } = require('../database/read/readProducts.js')
 
 var app = express();
 var cors = require('cors');
@@ -10,7 +10,29 @@ app.use( cors() );          // allow react app communicate with server on same m
 
 // Construct a schema, using GraphQL schema language
 
+/*
+type Init {
+    getInitProducts: [Product!]
+    getSearchTypes:  [SearchType!]
+  }
+*/
+
 var schema = buildSchema(`
+
+  type Init {
+    getSearchTypes : [SearchType!]
+    getInitProducts: [Product!]
+  }
+
+  type SearchType {
+    type_name: String!
+    tags:      [Tag!] 
+  }
+
+  type Tag {
+    tag_name:      String!
+    product_count: Int!
+  }
 
   type Product {
     id:           ID!
@@ -30,13 +52,54 @@ var schema = buildSchema(`
   }
 
   type Query {
+    
     getProducts(category: String!, stores: [String!], brands: [String!]): [Product!]
+    getInit: Init
   }
 `);
 
-     
+ 
 
-// If Message had any complex fields, we'd put them on this object.
+//getSearchTypes: [SearchType!]
+
+class Init {
+  async getSearchTypes(){
+    console.log("gst")
+
+    try{
+      return (await fetchTagMetaData() ).map( tmd => new SearchType(tmd))
+    }catch(err){
+      console.log(err)
+    }
+    
+  }
+  async getInitProducts(){
+    console.log("init pro")
+
+    try{
+      return  (await fetchProducts()).map( product => new Product(product))
+    }catch(err){
+      console.log(err)
+    }
+
+    
+  }
+}
+
+class Tag {
+  constructor( {tag_name , product_count} ) {
+    this.tag_name = tag_name         
+    this.product_count = product_count                  
+  }
+}
+
+class SearchType {
+  constructor( {type_name, tags} ) {
+        this.type_name = type_name          
+        this.tags = tags.map ( t => new Tag(t) )
+  }
+}
+ 
 class Product {
   constructor({_id, source_id, source_url, last_updated, product_info} ) {
 
@@ -99,15 +162,17 @@ var root = {
         return (await fetchProductsByBucket(tags)).map( product => new Product(product))
       }
       */
-       
-      
-
       //return (await fetchProducts()).map( product => new Product(product))
 
       
     },
+    //getSearchTypes: async ({}) => {
+    //  return (await fetchTagMetaData() ).map( tmd => new SearchType(tmd))
+   // },
+    getInit: () => {
+      return new Init()
+    },
 };
-
 
 app.use('/graphql', graphqlHTTP({
   schema: schema,
@@ -117,34 +182,3 @@ app.use('/graphql', graphqlHTTP({
 app.listen(4000, () => {
   console.log('Running a GraphQL API server at localhost:4000/graphql');
 });
-
-
-
-
-/*
-//working client query
-var query = `query GetProducts {
-    getProducts{
-        id, source_id, 
-    info{
-      brand, category
-        }   
-    }   
-  }                       
-`;
-
-fetch('http://localhost:4000/graphql', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  body: JSON.stringify({
-    query,
-    
-  })
-})
-  .then(r => r.json())
-  .then(data => console.log('data returned:', data));
-
-*/
