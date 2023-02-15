@@ -10,17 +10,15 @@ import './app.css'
 
 function App() {
 
-  //let query = useQuery(GET_INIT);
-
   const query = useQuery(GET_PRODUCTS, { variables: { category: "", stores: [], brands: [] } });
 
-  const { data, loading, error } = query
+  const { data } = query
 
   console.log(data)
 
-  const refetch = (c,b,s) => {
-    console.log(c,b,s)
-    query.refetch({ category: c, brands: b, stores: s } )
+  const refetch = (selected_filters) => {
+    console.log(selected_filters)
+    query.refetch({...selected_filters})
   }
 
   return (
