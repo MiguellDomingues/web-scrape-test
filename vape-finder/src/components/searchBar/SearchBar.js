@@ -41,22 +41,7 @@ function SearchBar( {refetch} ){
 
         <DropDownMenu title="Brands" tags={brands_tags} selected_tags={brands} selectedHandler={onBrandSelected} selectedTagsBGC={selectedFilterBGC}/>
         <DropDownMenu title="Stores" tags={stores_tags} selected_tags={stores} selectedHandler={onStoreSelected} selectedTagsBGC={selectedFilterBGC}/>
-                {/*
-        <div className="shops cursor_hand">
-                Shops
-                <div className="dropdown-arrow"></div>
-                <div className="dropdown-content">    
-                    {stores_tags.map( (store, idx)=>
-                    <span className={selectedFilterBGC(store.tag_name, stores)}  
-                          key={idx} 
-                          onClick={ () => onStoreSelected(store.tag_name) }>
-                         {store.tag_name} {store.product_count}
-                    </span>)}                  
-                </div>
-        </div>   
-        
-                    */  }
-           
+          
            <span className="about cursor_hand">About</span> 
         </div>
     </>)
