@@ -1,4 +1,4 @@
-const { Product } = require('../models.js');
+const { Product, TagMetaData } = require('../models.js');
 let db = require('../database.js')
 
 async function fetchProducts() {   
@@ -13,8 +13,6 @@ async function fetchProducts() {
         }).catch( (err)=> { reject(new Error("Database connection Error", { cause: err }) ) });
     })
  }
-
- //categories, stores, brands
 
  async function fetchProductsByCategoryBrandStore( query_str ) {   
     return new Promise( (resolve, reject) => {
@@ -35,7 +33,20 @@ async function fetchProducts() {
     })
  }
 
+ async function fetchTagMetaData() {   
+    return new Promise( (resolve, reject) => {
+        db.connect().then( ()=>{
+            TagMetaData.
+            aggregate([ { $project: { __v: 0} } ])
+                .then( (tmd) => { resolve(tmd)} )
+                .catch( (err) =>  { reject(new Error("Query Error", { cause: err })) } )
+                .finally( ()=> { db.disconnect()} )
+
+        }).catch( (err)=> { reject(new Error("Database connection Error", { cause: err }) ) });
+    })
+ }
 
 
- module.exports = { fetchProducts, fetchProductsByCategoryBrandStore }
+
+ module.exports = { fetchProducts, fetchProductsByCategoryBrandStore, fetchTagMetaData }
 
