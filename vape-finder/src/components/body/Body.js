@@ -1,8 +1,5 @@
 import './body.css'
 import CardList from '.././cardList/CardList.js'
-//import { useQuery } from '@apollo/client';
-
-//import { GET_PRODUCTS } from '../../queries/getProducts.js'
 
 function Body( {query} ) {
 

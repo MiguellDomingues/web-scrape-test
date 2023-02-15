@@ -44,18 +44,3 @@ function Card( {product} ) {
 
 export default Card;
 
-/*
-id "63def6359b25698ec550117a"
-last_updated "02/04/2023"
-source_id "1370"
-source_url "https://surreyvapes.com"
-
-info
-brand ""
-category "PRODUCTS/E-Cigs/ReplacementPods"
-img_src "https://cdn11.bigcommerce.com/s-f8le7jshax/images/stencil/300x300/products/1370/1693/Screen-Shot-2022-10-06-at-6-06-21-PM__10432.1667502935.png?c=1"
-name "Caliburn A2S Pods"
-price  "7.95"
-*/
-
-

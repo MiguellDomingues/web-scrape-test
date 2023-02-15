@@ -51,10 +51,6 @@ var schema = buildSchema(`
   }
 `);
 
- 
-
-//getSearchTypes: [SearchType!]
-
 class Init {
   async getSearchTypes(){
     console.log("gst")
@@ -114,14 +110,6 @@ class ProductInfo {
         this.info_url = info_url
   }
 }
-
-/*
-{
-    "categories": {"$in": categories}, 
-    "product_info.brand": {"$in": brands},
-    "source": {"$in": stores} 
-            }
-*/
 
 function buildQuery(category, stores, brands){
 

@@ -16,13 +16,6 @@ async function fetchProducts() {
 
  async function fetchProductsByCategoryBrandStore( query_str ) {   
     return new Promise( (resolve, reject) => {
-        /*
-        {
-                "categories": {"$in": categories}, 
-                "product_info.brand": {"$in": brands},
-                "source": {"$in": stores} 
-            }
-        */
         db.connect().then( ()=>{
             Product.find(query_str)
                 .then( (products) => { resolve(products)} )
