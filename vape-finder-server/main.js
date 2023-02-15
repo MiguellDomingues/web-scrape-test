@@ -9,14 +9,6 @@ var cors = require('cors');
 app.use( cors() );          // allow react app communicate with server on same machine/diff port
 
 // Construct a schema, using GraphQL schema language
-
-/*
-type Init {
-    getInitProducts: [Product!]
-    getSearchTypes:  [SearchType!]
-  }
-*/
-
 var schema = buildSchema(`
 
   type Init {
@@ -55,6 +47,7 @@ var schema = buildSchema(`
     
     getProducts(category: String!, stores: [String!], brands: [String!]): [Product!]
     getInit: Init
+    getSearchTypes: [SearchType!]
   }
 `);
 
@@ -130,48 +123,39 @@ class ProductInfo {
             }
 */
 
+function buildQuery(category, stores, brands){
+
+  const query_str = {}
+
+  if(category.length > 0) query_str["categories"] = { "$in" : category }
+  if(stores.length > 0)   query_str["source"] = { "$in" : stores}
+  if(brands.length > 0)   query_str["product_info.brand"] = { "$in" : brands }
+
+  console.log("/// query string: ", query_str)
+
+  return query_str
+}
+
 var root = {
     getProducts: async ( {category, stores, brands} ) => {
 
-      console.log(category, stores, brands)
+      console.log("///// query: getProducts ", category, stores, brands)
 
-      if(category.length === 0 && stores.length === 0 && brands.length === 0){
+
+      if(category.length === 0 && stores.length === 0 && brands.length === 0) 
         return (await fetchProducts()).map( product => new Product(product))
-      }
-
-      const query_str = {}
-
-      //if(category.length > 0) 
-      query_str["categories"] = { "$in" : ["Tanks","Pods","Coils"] }
-     // if(stores.length > 0) 
-      query_str["source"] = { "$in" : ["ezvape"]}
-    //  if(brands.length > 0) 
-     // query_str["product_info.brand"] = { "$in" : ["Smok","Allo","SMOK"] }
-
-      console.log(query_str)
-
-      return (await fetchProductsByCategoryBrandStore(query_str) ).map( product => new Product(product))
-
-      /*
-      SURREYVAPES
-      if(tags.length === 0){
-        console.log("no tags")
-        return (await fetchProducts()).map( product => new Product(product))
-      }else{
-        console.log("tags: ", tags)
-        return (await fetchProductsByBucket(tags)).map( product => new Product(product))
-      }
-      */
-      //return (await fetchProducts()).map( product => new Product(product))
-
-      
+        
+      let result = (await fetchProductsByCategoryBrandStore( buildQuery(category, stores, brands)) ).map( product => new Product(product))
+      //console.log(result.length)
+      return result
     },
-    //getSearchTypes: async ({}) => {
-    //  return (await fetchTagMetaData() ).map( tmd => new SearchType(tmd))
+    getSearchTypes: async ({}) => {
+      console.log("///// query: getSearchTypes")
+      return (await fetchTagMetaData() ).map( tmd => new SearchType(tmd))
+    },
+    //getInit: () => {
+    //  return new Init()
    // },
-    getInit: () => {
-      return new Init()
-    },
 };
 
 app.use('/graphql', graphqlHTTP({
