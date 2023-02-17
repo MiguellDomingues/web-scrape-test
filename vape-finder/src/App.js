@@ -10,14 +10,14 @@ import './app.css'
 
 function App() {
 
-  const query = useQuery(GET_PRODUCTS, { variables: { last_product_id: "", category: "", stores: [], brands: [] } });
-
-  const { data } = query
-
-  console.log("//app data",data)
+  const query = useQuery(GET_PRODUCTS, { variables: { last_product_id: "", category: "", stores: [], brands: [] } }, {
+    fetchPolicy: 'network-only', 
+    nextFetchPolicy: 'cache-first', 
+  });
 
   const refetch = (selected_filters) => {
-    console.log(selected_filters)
+    //console.log(selected_filters)
+    document.getElementById('cardContainer').scroll({top:0});
     query.refetch({...selected_filters})
   }
 
