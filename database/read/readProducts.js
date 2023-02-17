@@ -1,11 +1,11 @@
 const { Product, TagMetaData } = require('../models.js');
 let db = require('../database.js')
 
-async function fetchProducts() {   
+async function fetchSampleProducts() {   
     return new Promise( (resolve, reject) => {
         db.connect().then( ()=>{
             Product.
-            aggregate([ { $sample: { size: 10 } }, { $project: { __v: 0} } ])
+            aggregate([ { $sample: { size: 20 } }, { $project: { __v: 0} } ])
                 .then( (products) => { resolve(products)} )
                 .catch( (err) =>  { reject(new Error("Query Error", { cause: err })) } )
                 .finally( ()=> { db.disconnect()} )
@@ -17,7 +17,7 @@ async function fetchProducts() {
  async function fetchProductsByCategoryBrandStore( query_str ) {   
     return new Promise( (resolve, reject) => {
         db.connect().then( ()=>{
-            Product.find(query_str)
+            Product.find(query_str).limit(20)
                 .then( (products) => { resolve(products)} )
                 .catch( (err) =>  { reject(new Error("Query Error", { cause: err })) } )
                 .finally( ()=> { db.disconnect()} )
@@ -41,5 +41,5 @@ async function fetchProducts() {
 
 
 
- module.exports = { fetchProducts, fetchProductsByCategoryBrandStore, fetchTagMetaData }
+ module.exports = { fetchSampleProducts, fetchProductsByCategoryBrandStore, fetchTagMetaData }
 

@@ -10,11 +10,11 @@ import './app.css'
 
 function App() {
 
-  const query = useQuery(GET_PRODUCTS, { variables: { category: "", stores: [], brands: [] } });
+  const query = useQuery(GET_PRODUCTS, { variables: { last_product_id: "", category: "", stores: [], brands: [] } });
 
   const { data } = query
 
-  console.log(data)
+  console.log("//app data",data)
 
   const refetch = (selected_filters) => {
     console.log(selected_filters)
@@ -33,3 +33,4 @@ function App() {
 }
 
 export default App;
+

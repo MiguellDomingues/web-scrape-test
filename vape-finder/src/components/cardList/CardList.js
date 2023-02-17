@@ -1,16 +1,38 @@
 import './cardlist.css'
 import Card from '../card/Card'
 
-// link images from relative path to /public folder
-// card/components/src/ (image name)
-const img_src = '../../../demo.webp';
+function CardList( { products, fetchNewPage } ) {
 
-function CardList( { products } ) {
+  const PRODUCTS_PER_PAGE = 20
+
+  const hasProducts = _ => products.length > 0
+
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+    
+    const last_product_id = hasProducts() ? products[products.length-1].id : null
+
+    console.log("last_product_id: ", last_product_id)
+    
+    if (bottom) { 
+//category: $category, stores: $stores, brands: $brands
+      console.log("bottom")
+
+      if(hasProducts() && products.length%PRODUCTS_PER_PAGE === 0){
+        console.log("fetch Page")
+        fetchNewPage({
+          variables: {
+            last_product_id: last_product_id
+          },
+        })
+      }
+    }
+  }
 
   console.log(products)
 
   return (
-    <div className="card_container">  
+    <div className="card_container" onScroll={handleScroll}>  
         {products.map( (product, idx)=> 
           <Card key={idx} product={product}/>)}     
     </div>
@@ -18,7 +40,6 @@ function CardList( { products } ) {
 }
 
 export default CardList;
-
 /*
 
 

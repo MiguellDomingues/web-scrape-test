@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const GET_PRODUCTS = gql`
-    query GetProducts($category: String!, $stores: [String!], $brands: [String!]) {
-        getProducts(category: $category, stores: $stores, brands: $brands){
+    query GetProducts($last_product_id: ID!, $category: String!, $stores: [String!], $brands: [String!]) {
+        getProducts(last_product_id: $last_product_id, category: $category, stores: $stores, brands: $brands){
             id, source_id,  source_url, last_updated
         info{
             brand, category_str, name, img_src, price, info_url
@@ -11,6 +11,18 @@ export const GET_PRODUCTS = gql`
     }
 `;
 
+export const GET_SEARCH_TYPES = gql`
+    query GetSearchTypes {  
+        getSearchTypes {
+        type_name, 
+            tags{
+              tag_name, product_count
+            }  
+        }       
+    }
+`;
+
+/*
 export const GET_INIT = gql`
 query GetInit {  
     getInit{
@@ -26,16 +38,4 @@ query GetInit {
     }
  }
 `;
-
-//USE THIS AGAIN
-
-export const GET_SEARCH_TYPES = gql`
-    query GetSearchTypes {  
-        getSearchTypes {
-        type_name, 
-            tags{
-              tag_name, product_count
-            }  
-        }       
-    }
-`;
+*/
