@@ -17,7 +17,7 @@ async function fetchSampleProducts() {
  async function fetchProductsByCategoryBrandStore( query_str ) {   
     return new Promise( (resolve, reject) => {
         db.connect().then( ()=>{
-            Product.find(query_str).limit(20)
+            Product.find(query_str).limit(11)
                 .then( (products) => { resolve(products)} )
                 .catch( (err) =>  { reject(new Error("Query Error", { cause: err })) } )
                 .finally( ()=> { db.disconnect()} )

@@ -36,7 +36,7 @@ export const useSearchBar = ( refetch ) =>{
     
     const { data, loading, error } = query
 
-    console.log("////", data, loading, error)
+    //console.log("////", data, loading, error)
 
     const filter_tags = {
         category_tags : !loading ? orderTagsByProductCount( filterTagsByMinProductCount (data["getSearchTypes"][0].tags)) : [],

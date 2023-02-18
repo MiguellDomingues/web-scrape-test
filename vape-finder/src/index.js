@@ -9,12 +9,16 @@ const client = new ApolloClient({
   uri: 'http://localhost:4000/graphql',
   cache: new InMemoryCache({
     typePolicies: {
+      SearchType: {
+        keyFields: ["type_name"],
+      },
       Query: {
         fields: {
+
           getProducts: {
             read(existing, { args: {last_product_id, category, stores, brands }}) {
 
-              console.log("read:", "l_id:", last_product_id, "c:", category, "s:", stores, "b:", brands, " existing: ", existing)
+             // console.log("read:", "l_id:", last_product_id, "c:", category, "s:", stores, "b:", brands, " existing: ", existing)
 
 
               
@@ -31,7 +35,7 @@ const client = new ApolloClient({
             // Concatenate the incoming list items with
             // the existing list items.
             merge(existing = [], incoming) {
-              console.log("CACHE: existing: ", existing.length, " incoming: ", incoming)
+             // console.log("CACHE: existing: ", existing.length, " incoming: ", incoming)
               return [...existing, ...incoming];
             },
           }
