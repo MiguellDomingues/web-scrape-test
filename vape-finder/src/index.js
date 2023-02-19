@@ -7,6 +7,7 @@ import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client'
 
 const client = new ApolloClient({
   uri: 'http://localhost:4000/graphql',
+
   cache: new InMemoryCache({
     typePolicies: {
       SearchType: {
@@ -18,15 +19,14 @@ const client = new ApolloClient({
           getProducts: {
             read(existing, { args: {last_product_id, category, stores, brands }}) {
 
-             // console.log("read:", "l_id:", last_product_id, "c:", category, "s:", stores, "b:", brands, " existing: ", existing)
+              console.log("read:", "l_id:", last_product_id, "c:", category, "s:", stores, "b:", brands, " existing: ", existing)
 
-
-              
+    
               return existing
             },
             // Don't cache separate results based on
             // any of this field's arguments.
-            keyArgs: [],              
+            keyArgs: ["category", "stores", "brands",] ,              
             // false :                                              home page infinite callouts on scroll/merging
             //["category", "stores", "brands","last_product_id"]    one callout max
             //["category", "stores", "brands",]                     home page infinite callouts on scroll/merging
@@ -35,7 +35,7 @@ const client = new ApolloClient({
             // Concatenate the incoming list items with
             // the existing list items.
             merge(existing = [], incoming) {
-             // console.log("CACHE: existing: ", existing.length, " incoming: ", incoming)
+              console.log("CACHE: existing: ", existing.length, " incoming: ", incoming)
               return [...existing, ...incoming];
             },
           }
@@ -43,13 +43,43 @@ const client = new ApolloClient({
       }
     }
   }),
+  defaultOptions: {
+    watchQuery: {
+      nextFetchPolicy(
+        currentFetchPolicy,
+        {
+          // Either "after-fetch" or "variables-changed", indicating why the
+          // nextFetchPolicy function was invoked.
+          reason,
+          // The rest of the options (currentFetchPolicy === options.fetchPolicy).
+          options,
+          // The original value of options.fetchPolicy, before nextFetchPolicy was
+          // applied for the first time.
+          initialPolicy,
+          // The ObservableQuery associated with this client.watchQuery call.
+          observable,
+        }
+      ) {
+        console.log("////INSIDE NEXTFETCHPOLICY////")
+        console.log(
+        " currentFetchPolicy: ", currentFetchPolicy, 
+        " reason:", reason, 
+        " options: ", options, 
+        " initialPolicy: ", initialPolicy, 
+        " observable: ", observable)
+
+        // Leave all other fetch policies unchanged.
+        return currentFetchPolicy;
+      },
+    },
+  },
 });
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <ApolloProvider client={client}>
-      <App />
+      <App client={client} />
     </ApolloProvider>
   </React.StrictMode>
 );
