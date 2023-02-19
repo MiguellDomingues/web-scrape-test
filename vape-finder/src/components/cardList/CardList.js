@@ -2,8 +2,9 @@ import './cardlist.css'
 import Card from '../card/Card'
 import {useState} from 'react'
 
-function CardList( { products, fetchNewPage } ) {
+function CardList( { products, fetchMore } ) {
 
+ 
   const [last_product_id, setLPID] = useState("");
 
   const PRODUCTS_PER_PAGE = 11
@@ -19,7 +20,7 @@ function CardList( { products, fetchNewPage } ) {
     if(products.length%PRODUCTS_PER_PAGE === 0 && last_product_id !== lpid){
       setLPID(lpid)
       console.log("fetch Page")
-      fetchNewPage({ variables: { last_product_id: lpid },})
+      fetchMore({ variables: { last_product_id: lpid},})
     }
   }
 

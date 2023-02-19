@@ -10,9 +10,8 @@ function Body( {query} ) {
 
   const { fetchMore } = query
 
-
   return (<main className="body">
-    <CardList products={data["getProducts"]} fetchNewPage={fetchMore} />
+    <CardList products={data["getProducts"]} fetchMore={fetchMore}/>
   </main>);
 }
 

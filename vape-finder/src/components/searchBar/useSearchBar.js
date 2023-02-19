@@ -1,20 +1,16 @@
-import {useState} from 'react'
 import { useQuery } from '@apollo/client' 
 import { GET_SEARCH_TYPES } from '../../queries/queries.js'
 
-export const useSearchBar = ( refetch ) =>{
+export const useSearchBar = ( selected_filters_handlers  ) =>{
+
+    const { selected_filters, setAndRefetch } = selected_filters_handlers 
 
     const query = useQuery(GET_SEARCH_TYPES);
-    const [selected_filters, setFilters] = useState({ category: "", brands: [], stores: [] });
 
     const orderTagsByProductCount = (tags) => tags.sort( (lhs, rhs)=> rhs.product_count-lhs.product_count)
     const filterTagsByMinProductCount = (tags, min_product_count = 0) => tags.filter((tag) => tag.product_count >= min_product_count)
     const selectedFilterBGC = (str, arr) => arr.includes(str) ? " filter_selected" : "" 
-    const setAndRefetch = (selected_filters) => {
-        setFilters(selected_filters)  
-        refetch(selected_filters) 
-    }
-
+  
     const onCategorySelected = category => 
         setAndRefetch({ 
             ...selected_filters,
@@ -44,7 +40,7 @@ export const useSearchBar = ( refetch ) =>{
         stores_tags : !loading ? orderTagsByProductCount( filterTagsByMinProductCount (data["getSearchTypes"][2].tags)) : []
     }
 
-    const echo = () => console.log(selected_filters)
+    const echo = () => console.log("////SEARCH BAR: ", selected_filters)
 
     echo()
     
