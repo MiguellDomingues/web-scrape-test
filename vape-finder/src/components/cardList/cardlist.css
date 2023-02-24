@@ -4,6 +4,7 @@
         display: flex;
         flex-wrap: wrap;
         padding: 1em;   
+        padding-top: 2em;
         overflow-y: auto;
         border-radius: 10px;
         margin-top: 5px;
@@ -38,3 +39,15 @@
       }
       
   }
+
+.dropdown {
+  position: absolute;
+  z-index: 1;
+  top: 15px;
+  right: 15px;
+  font-size: 10px;
+ 
+}
+
+
+

@@ -2,7 +2,7 @@ import './cardlist.css'
 import Card from '../card/Card'
 import {useState} from 'react'
 
-function CardList( { products, fetchMore } ) {
+function CardList( { products, fetchMore, loading } ) {
 
  
   const [last_product_id, setLPID] = useState("");
@@ -24,10 +24,17 @@ function CardList( { products, fetchMore } ) {
     }
   }
 
-  console.log(products)
+ // console.log(products)
 
   return (
     <div className="card_container" id="cardContainer" onScroll={ e => isBottom(e) && hasProducts(products) && handleBottom() }>  
+        {!loading && 
+          <select className='dropdown'>
+            <option value="none">None</option>
+            <option value="high_to_low">Price: High to Low</option>
+            <option value="low_to_high">Price: Low to High</option>
+          </select>
+        }
         {products.map( (product, idx)=> 
           <Card key={idx} product={product}/>)}     
     </div>
