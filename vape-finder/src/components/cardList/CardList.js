@@ -24,8 +24,6 @@ function CardList( { products, fetchMore, loading } ) {
     }
   }
 
- // console.log(products)
-
   return (
     <div className="card_container" id="cardContainer" onScroll={ e => isBottom(e) && hasProducts(products) && handleBottom() }>  
         {!loading && 

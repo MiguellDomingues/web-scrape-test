@@ -42,7 +42,7 @@ export const useSearchBar = ( selected_filters_handlers  ) =>{
 
     const echo = () => console.log("////SEARCH BAR: ", selected_filters)
 
-    echo()
+    //echo()
     
     return [
         filter_tags,

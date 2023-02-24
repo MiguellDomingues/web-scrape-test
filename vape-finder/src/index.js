@@ -17,25 +17,14 @@ const client = new ApolloClient({
         fields: {
 
           getProducts: {
-            read(existing, { args: {last_product_id, category, stores, brands }}) {
+           read(existing, { args, toReference }) {
+            console.log("CACHE READ: existing: ", existing)
+            return existing;
+          },
 
-              console.log("read:", "l_id:", last_product_id, "c:", category, "s:", stores, "b:", brands, " existing: ", existing)
-
-    
-              return existing
-            },
-            // Don't cache separate results based on
-            // any of this field's arguments.
             keyArgs: ["category", "stores", "brands",] ,              
-            // false :                                              home page infinite callouts on scroll/merging
-            //["category", "stores", "brands","last_product_id"]    one callout max
-            //["category", "stores", "brands",]                     home page infinite callouts on scroll/merging
-            //[]                                                    home page infinite callouts on scroll/merging
-
-            // Concatenate the incoming list items with
-            // the existing list items.
             merge(existing = [], incoming) {
-              console.log("CACHE: existing: ", existing.length, " incoming: ", incoming)
+              console.log("CACHE MERGE: existing: ", existing.length, " incoming: ", incoming)
               return [...existing, ...incoming];
             },
           }
@@ -61,15 +50,7 @@ const client = new ApolloClient({
         }
       ) {
         console.log("////INSIDE NEXTFETCHPOLICY////")
-        console.log(
-        " currentFetchPolicy: ", currentFetchPolicy, 
-        " reason:", reason, 
-        " options: ", options, 
-        " initialPolicy: ", initialPolicy, 
-        " observable: ", observable)
-
-        // Leave all other fetch policies unchanged.
-        return currentFetchPolicy;
+        return currentFetchPolicy ;
       },
     },
   },
@@ -79,7 +60,7 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <ApolloProvider client={client}>
-      <App client={client} />
+      <App />
     </ApolloProvider>
   </React.StrictMode>
 );
