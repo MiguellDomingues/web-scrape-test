@@ -5,7 +5,7 @@ async function fetchSampleProducts() {
     return new Promise( (resolve, reject) => {
         db.connect().then( ()=>{
             Product.
-            aggregate([ { $sample: { size: 20 } }, { $project: { __v: 0} } ])
+            aggregate([ { $sample: { size: 11 } }, { $project: { __v: 0} } ])
                 .then( (products) => { resolve(products)} )
                 .catch( (err) =>  { reject(new Error("Query Error", { cause: err })) } )
                 .finally( ()=> { db.disconnect()} )
@@ -17,6 +17,15 @@ async function fetchSampleProducts() {
  async function fetchProductsByCategoryBrandStore( query_str ) {   
     return new Promise( (resolve, reject) => {
         db.connect().then( ()=>{
+
+            /*
+            const a ={
+            }
+
+            a["product_info.price"] = 1
+            Product.find(query_str).sort(a).limit(11)
+            */
+             
             Product.find(query_str).limit(11)
                 .then( (products) => { resolve(products)} )
                 .catch( (err) =>  { reject(new Error("Query Error", { cause: err })) } )

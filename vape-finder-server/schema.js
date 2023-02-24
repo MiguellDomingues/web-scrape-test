@@ -36,7 +36,7 @@ module.exports = buildSchema(`
 
   type Query {
     
-    getProducts(last_product_id: ID!, category: String!, stores: [String!], brands: [String!]): [Product!]
+    getProducts(last_product_id: ID!, category: String!, stores: [String!], brands: [String!], page: Int): [Product!]
     getInit: Init
     getSearchTypes: [SearchType!]
   }
