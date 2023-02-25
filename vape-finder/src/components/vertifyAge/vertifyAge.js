@@ -1,6 +1,3 @@
-import {useState} from 'react'
-import moment from 'moment'
-
 import './vertifyAge.css'
 
 import useVertifyAge from './useVertifyAge'

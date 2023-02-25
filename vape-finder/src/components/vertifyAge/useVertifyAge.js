@@ -6,7 +6,7 @@ function useVertifyAge(enabled){
     const min_age = 19
   
     const [birth_date, setBirthDate] = useState({year: "" , month: "", day: ""})
-    const [show, setShow] = useState(!!enabled)
+    const [show, setShow] = useState(enabled)
     const [error, setError] = useState("")
   
     const onChange = e => setBirthDate( {...birth_date,[e.target.name]: e.target.value} )
