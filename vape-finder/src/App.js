@@ -2,6 +2,7 @@
 import Footer from './components/footer/Footer'
 import Header from './components/header/Header'
 import Body from './components/body/Body'
+import VertifyAge from './components/vertifyAge/vertifyAge'
 import { useQuery, useApolloClient } from '@apollo/client' 
 import {useState} from 'react'
 
@@ -68,13 +69,14 @@ const selected_filters_handlers = {
 }
 
   return (
-    <div className="page"> 
-      <div className="app">     
-        <Header refetch={selected_filters_handlers}/>
-        <Body query={query}/> 
-        <Footer refetch={selected_filters_handlers}/>
+      <div className="page">
+          <VertifyAge enabled/>
+          <div className="app">     
+            <Header refetch={selected_filters_handlers}/>
+            <Body query={query}/> 
+            <Footer refetch={selected_filters_handlers}/>
+          </div>
       </div>
-    </div>
   );
 }
 
