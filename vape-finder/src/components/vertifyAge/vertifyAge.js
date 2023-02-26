@@ -10,20 +10,30 @@ function VertifyAge( { enabled } ){
     { onChange, validateInput }
   ] = useVertifyAge(enabled)
 
+  //an example of JSX spread attributes
+  //move all the common props into an object as keys
+  let input_props = {
+    type:"text",
+    onChange:onChange,
+    minLength:"1",
+    maxLength:"2",
+    size:"2",
+    required:true
+  }
+
+  //then {...input_props} the props, applying overrides when a spread prop is different
+
     return (
       <>{show && <>
           <div className={`age_vertification_overlay show_overlay`}>
            <div className="date_input">
             <h1>You must be 19+ to view the content on this website!</h1>
             <h1>This website has material not intended for anyone under the age of 19</h1>
-              <input type="text" name="day" placeholder="DD" required minlength="1" maxlength="2" size="2" value={birth_date.day} onChange={onChange}>
-              </input>
-              <input type="text" name="month" placeholder="MM" required minlength="1" maxlength="2" size="2" value={birth_date.month} onChange={onChange}>
-              </input>
-              <input type="text" name="year" placeholder="YYYY" required minlength="4" maxlength="4" size="2" value={birth_date.year} onChange={onChange}>
-              </input>
-              <input type="submit" name="enter" placeholder="Year" onClick={ validateInput }>
-              </input><br/>
+              <input {...input_props} name="day" placeholder="DD" value={birth_date.day}/>         
+              <input {...input_props} name="month" placeholder="MM" value={birth_date.month}/>            
+              <input {...input_props} name="year" placeholder="YYYY" minlength="4" maxlength="4" value={birth_date.year}/>            
+              <input type="submit" name="enter" placeholder="Year" onClick={ validateInput }/>
+              <br/>
               {error}
             </div>
       </div>
