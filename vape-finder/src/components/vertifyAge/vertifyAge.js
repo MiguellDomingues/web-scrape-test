@@ -25,7 +25,7 @@ function VertifyAge( { enabled } ){
 
     return (
       <>{show && <>
-          <div className={`age_vertification_overlay show_overlay`}>
+          <div className={`age_vertification_overlay show_overlay no_select`}>
            <div className="date_input">
             <h1>You must be 19+ to view the content on this website!</h1>
             <h1>This website has material not intended for anyone under the age of 19</h1>
