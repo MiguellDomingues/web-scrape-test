@@ -1,6 +1,5 @@
 import './body.css'
 import CardList from '.././cardList/CardList.js'
-import LoadingOverlay from 'react-loading-overlay'
 
 function Body( {query} ) {
 
@@ -14,11 +13,9 @@ function Body( {query} ) {
   const { fetchMore } = query
 
   return(
-  <LoadingOverlay active={loading} spinner text=''>
     <main className="body">
       <CardList products={data ? data["getProducts"] : []} fetchMore={fetchMore} loading={loading}/>
     </main>
-  </LoadingOverlay>
   );
 }
 

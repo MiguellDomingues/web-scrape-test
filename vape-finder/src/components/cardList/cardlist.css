@@ -43,11 +43,18 @@
 .dropdown {
   position: absolute;
   z-index: 1;
-  top: 15px;
-  right: 15px;
+  transform: translate(420%, -147%);
   font-size: 10px;
  
 }
+
+.spinner_middle{
+  position: absolute;
+  z-index: 1;
+  transform: translate(-4%, 450%);
+}
+
+
 
 
 
